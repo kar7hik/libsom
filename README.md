@@ -1,1 +1,1 @@
-#Growing Hierarchical Recurrent Self-Organizing Map
+# Growing Hierarchical Recurrent Self-Organizing Map
