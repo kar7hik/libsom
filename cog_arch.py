@@ -31,10 +31,17 @@ class SOM():
         else:
             self.init_radius = init_radius
 
+        assert self.init_radius != 0, \
+            "Init radius cannot be zero."
         self.time_constant = self.num_iteration / np.log(self.init_radius)
         self.umatrix = np.zeros(
             shape=(self.nrows*2-1, self.ncols*2-1, 1),
             dtype=float)
+
+        print("Init radius: {}, num_iteration: {}, time_constant: {}".format(
+            self.init_radius,
+            self.num_iteration,
+            self.time_constant))
 
     def get_unit_weight(self, location):
         """Get the weights associated with a given unit.
@@ -307,19 +314,3 @@ def return_bmu_weights(som_obj, bmus, weights=[]):
 def print_bmus_weight(data, weights):
     for i in range(len(data)):
         print("data: {0}, wgs: {1}".format(data[i], weights[i]))
-
-
-class GSOM():
-    def __init__(self,
-                 initial_map_size,
-                 input_data,
-                 tau_m,
-                 num_iteration=100,
-                 init_learning_rate=0.9,
-                 init_radius=None):
-        self._initial_map_size = initial_map_size
-        self.input_data = input_data
-        self.num_iteration = num_iteration
-        self.init_learning_rate = init_learning_rate
-        self.init_radius = init_radius
-        self._tau_m = tau_m
