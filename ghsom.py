@@ -238,17 +238,18 @@ class Growing_SOM():
                 mapped_neurons += 1
 
         if mapped_neurons == 0:
-            print("Current neuron doesn't have any dataset assigned to it")
-            print("Som map shape: {}".format(self.current_map_shape))
-            print("Som map: {}".format(self.current_som_map))
-            print("Newline")
-            print("Parent data shape: {}".format(self.parent_dataset.shape))
-            print("Parent data: {}".format(self.parent_dataset))
-            for idx, neuron in enumerate(self.neurons.ravel()):
-                print("neuron {} data set shape: {}".format(idx, neuron.input_dataset.shape))
+            pass
+            # print("Current neuron doesn't have any dataset assigned to it")
+        #     print("Som map shape: {}".format(self.current_map_shape))
+        #     print("Som map: {}".format(self.current_som_map))
+        #     print("Newline")
+        #     print("Parent data shape: {}".format(self.parent_dataset.shape))
+        #     print("Parent data: {}".format(self.parent_dataset))
+        #     for idx, neuron in enumerate(self.neurons.ravel()):
+        #         print("neuron {} data set shape: {}".format(idx, neuron.input_dataset.shape))
 
-        print("Mapped neurons: {}, changed_neurons: {}".format(mapped_neurons,
-                                                               changed_neurons))
+        # print("Mapped neurons: {}, changed_neurons: {}".format(mapped_neurons,
+        #                                                        changed_neurons))
         return ((MQE / mapped_neurons) >= (self.tau_1 *
                                            self.parent_quantization_error)) and \
                                            (changed_neurons > int(np.round(mapped_neurons / 5)))
@@ -261,8 +262,8 @@ class Growing_SOM():
         neurons = self.neurons.ravel()
         num_neurons = len(neurons)
         neurons_shape = self.neurons.shape
-        print("Neurons shape: {}, num neurons: {}".format(neurons_shape,
-                                                          num_neurons))
+        # print("Neurons shape: {}, num neurons: {}".format(neurons_shape,
+        #                                                   num_neurons))
         bmus = []
         for i in input_dataset:
             bmu = self.som.get_bmu(i)
@@ -288,14 +289,14 @@ class Growing_SOM():
         #     print("neurons as index: {}".format(neurons_as_index))
 
         # print("Bmus: {}".format(bmus))
-        print("bmu as index: {}".format(bmu_as_index))
+        # print("bmu as index: {}".format(bmu_as_index))
         # print("neurons as index: {}".format(neurons_as_index))
-        print("Data map to neuron: {}".format(np.array(data_map_to_neuron)))
+        # print("Data map to neuron: {}".format(np.array(data_map_to_neuron)))
  
         for idx, data_idxs in enumerate(data_map_to_neuron):
             neurons[idx].replace_dataset(input_dataset[data_idxs, :])
-            print("mapped dataset shape: {}".format(input_dataset[data_idxs, :].shape))
-            print("Parent dataset shape: {}".format(input_dataset.shape))
+            # print("mapped dataset shape: {}".format(input_dataset[data_idxs, :].shape))
+            # print("Parent dataset shape: {}".format(input_dataset.shape))
 
     def find_error_neuron(self):
         quantization_errors = list()
@@ -349,25 +350,25 @@ class Growing_SOM():
 
         # new_column_idx = 2 then [(0, 2), (1, 2), (2, 2)]
         new_line_idx = [(row, new_column_idx) for row in range(map_rows)]
-        print("new_col_line_idx: {}".format(new_line_idx))
+        # print("new_col_line_idx: {}".format(new_line_idx))
 
-        self.print_neurons_matrix()
+        # self.print_neurons_matrix()
         # Creating new column in neurons array
         self.insert_neurons(new_column_idx, "horizontal")
 
         for row in range(map_rows):
-            col = new_column_idx
-            new_idx = [row, col+1]
-            neuron = self.neurons[row][col+1]
-            neuron.set_location(new_idx)
+            for col in reversed(range(new_column_idx, map_cols)):
+                new_idx = [row, col+1]
+                neuron = self.neurons[row][col+1]
+                neuron.set_location(new_idx)
 
-            # update row and col values to the inserted neurons
-            inserted_neuron = self.neurons[row, col]
-            inserted_neuron.set_location([row, col])
-            print("new_idx: {}, normal_idx: {}".format(new_idx,
-                                                       [row, col]))
+                # update row and col values to the inserted neurons
+                inserted_neuron = self.neurons[row, col]
+                inserted_neuron.set_location([row, col])
+                # print("new_idx: {}, normal_idx: {}".format(new_idx,
+                #                                            [row, col]))
 
-        self.print_neurons_matrix()
+        # self.print_neurons_matrix()
 
         # TODO: Neuron locations are wrong
         neurons = self.neurons.ravel()
@@ -379,7 +380,7 @@ class Growing_SOM():
             neurons_as_index.append(np.ravel_multi_index(neuron_location,
                                                          neurons_shape))
 
-        print("Neurons as index: {}".format(neurons_as_index))
+        # print("Neurons as index: {}".format(neurons_as_index))
         # Creating new column in weight map
         line = np.zeros(shape=(map_rows, self.num_input_features),
                         dtype=np.float32)
@@ -394,10 +395,10 @@ class Growing_SOM():
         return new_line_idx
 
     def print_neurons_matrix(self):
-        print("Current neurons map shape: {}".format(self.neurons.shape))
+        # print("Current neurons map shape: {}".format(self.neurons.shape))
         for idx, neuron in enumerate(self.neurons.ravel()):
             neuron_location = neuron.get_location()
-            print("Neuron {} location: {}".format(idx, neuron_location))
+            # print("Neuron {} location: {}".format(idx, neuron_location))
 
     def add_row_in_between(self, error_neuron, dissimilar_neuron):
         """
@@ -412,27 +413,27 @@ class Growing_SOM():
 
         # new_row_idx = 2 then [(2, 0), (2, 1), (2, 2)]
         new_line_idx = [(new_row_idx, col) for col in range(map_cols)]
-        print("new_row_line_idx: {}".format(new_line_idx))
+        # print("new_row_line_idx: {}".format(new_line_idx))
 
-        self.print_neurons_matrix()
+        # self.print_neurons_matrix()
         # Creating new column in neurons array
         self.insert_neurons(new_row_idx, "vertical")
 
-        for col in range(map_cols):
-            row = new_row_idx
-            # print("current row: {}, col: {}".format(row, col))
-            new_idx = [row+1, col]
-            neuron = self.neurons[row+1][col]
-            neuron.set_location(new_idx)
+        for row in reversed(range(new_row_idx, map_rows)):
+            for col in range(map_cols):
+                # print("current row: {}, col: {}".format(row, col))
+                new_idx = [row+1, col]
+                neuron = self.neurons[row+1][col]
+                neuron.set_location(new_idx)
             
-            # update row and col values to the inserted neurons
-            inserted_neuron = self.neurons[row, col]
-            inserted_neuron.set_location([row, col])
+                # update row and col values to the inserted neurons
+                inserted_neuron = self.neurons[row, col]
+                inserted_neuron.set_location([row, col])
 
-            print("new_idx: {}, normal_idx: {}".format(new_idx,
-                                                       [row, col]))
+                # print("new_idx: {}, normal_idx: {}".format(new_idx,
+                #                                            [row, col]))
 
-        self.print_neurons_matrix()
+        # self.print_neurons_matrix()
         neurons = self.neurons.ravel()
         num_neurons = len(neurons)
         neurons_shape = self.neurons.shape
@@ -442,10 +443,10 @@ class Growing_SOM():
             neurons_as_index.append(np.ravel_multi_index(neuron_location,
                                                          neurons_shape))
 
-        print("Neurons as index: {}".format(neurons_as_index))
+        # print("Neurons as index: {}".format(neurons_as_index))
 
-        print(self.weight_map.shape)
-        print("Adding new column to the weight map.")
+        # print(self.weight_map.shape)
+        # print("Adding new column to the weight map.")
         # Creating new rows in weight map
         line = np.zeros(shape=(map_cols, self.num_input_features),
                         dtype=np.float32)
@@ -470,10 +471,10 @@ class Growing_SOM():
             axis_val = 0
             for col in range(map_cols):
                 row = new_idx
-                print("map_rows: {}, map_cols: {}, col: {}, new_row: {}".format(map_rows,
-                                                                                map_cols,
-                                                                                col,
-                                                                                row))
+                # print("map_rows: {}, map_cols: {}, col: {}, new_row: {}".format(map_rows,
+                #                                                                 map_cols,
+                #                                                                 col,
+                #                                                                 row))
                 shifted_idx = [row, col]
                 neuron = self.neuron_creator.new_neuron(shifted_idx,
                                                         empty_weight_vector)
@@ -483,10 +484,6 @@ class Growing_SOM():
             axis_val = 1
             for row in range(map_rows):
                 col = new_idx
-                print("map_rows: {}, map_cols: {}, col: {}, new_row: {}".format(map_rows,
-                                                                                map_cols,
-                                                                                col,
-                                                                                row))
                 shifted_idx = [row, col]
                 neuron = self.neuron_creator.new_neuron(shifted_idx,
                                                         empty_weight_vector)
@@ -654,7 +651,7 @@ class GHSOM():
                                            growing_map.neurons.ravel())
 
                 for _neuron in neurons_to_expand:
-                    print("weight map of growing_map:")
+                    # print("weight map of growing_map:")
                     # print(growing_map.weight_map)
                     _neuron.child_map = self.create_new_GSOM(
                         _neuron.compute_quantization_error(),
@@ -699,7 +696,7 @@ class GHSOM():
         stencil = self.generate_kernal_stencil(parent_position)
         for child_position in np.ndindex(2, 2):
             child_position = np.asarray(child_position)
-            print(weight_map.shape)
+            # print(weight_map.shape)
             mask = self.filter_out_of_bound_position(child_position,
                                                      stencil,
                                                      [weight_map.shape[0], weight_map.shape[1]])
@@ -755,11 +752,11 @@ def plot_child(e, gmap):
     if e.inaxes is not None:
         coords = (int(e.ydata),
                   int(e.xdata))
-        print(coords)
-        print("Current map shape: {}".format(gmap.current_som_map.shape))
+        # print(coords)
+        # print("Current map shape: {}".format(gmap.current_som_map.shape))
         neuron = gmap.neurons[coords]
         if neuron.child_map is not None:
-            print("Child_map shape: {}".format(neuron.child_map.current_som_map.shape))
+            # print("Child_map shape: {}".format(neuron.child_map.current_som_map.shape))
             plot_data(neuron.child_map)
 
 def plot_data(gmap):
@@ -796,36 +793,36 @@ input_dataset = raw_data / col_maxes[np.newaxis, :]
 #     input_dataset[i][1] = 0.0
 
 
-# tau_1 = 0.1
-# tau_2 = 0.01
-# learning_rate = 0.25
-# growing_metric = "qe"
+tau_1 = 0.001
+tau_2 = 0.001
+learning_rate = 0.95
+growing_metric = "qe"
 
-# gh = GHSOM(input_dataset, tau_1, tau_2, learning_rate, growing_metric)
-# zero_unit = gh.train(15)
-# gmap = zero_unit.child_map.current_som_map
-# g = zero_unit.child_map
-# plot_data(g)
+gh = GHSOM(input_dataset, tau_1, tau_2, learning_rate, growing_metric)
+zero_unit = gh.train(15)
+gmap = zero_unit.child_map.current_som_map
+g = zero_unit.child_map
+plot_data(g)
 
 
-neuron_creator = Neuron_Creator(0.001, "qe")
-zero_layer = Zero_layer(input_dataset, neuron_creator)
-zero_layer.zero_unit.weight_vector
-zero_layer.zero_unit.find_distance(input_dataset)
-er = zero_layer.zero_unit.compute_quantization_error()
+# neuron_creator = Neuron_Creator(0.001, "qe")
+# zero_layer = Zero_layer(input_dataset, neuron_creator)
+# zero_layer.zero_unit.weight_vector
+# zero_layer.zero_unit.find_distance(input_dataset)
+# er = zero_layer.zero_unit.compute_quantization_error()
 
-zero_neuron = zero_layer.zero_unit
-weight_map = np.random.uniform(size=(2, 2, input_dataset.shape[1]))
-first_layer = Growing_SOM([2, 2],
-                          0.0037,
-                          weight_map,
-                          input_dataset,
-                          er,
-                          neuron_creator)
+# zero_neuron = zero_layer.zero_unit
+# weight_map = np.random.uniform(size=(2, 2, input_dataset.shape[1]))
+# first_layer = Growing_SOM([2, 2],
+#                           0.0037,
+#                           weight_map,
+#                           input_dataset,
+#                           er,
+#                           neuron_creator)
 
 
 #first_layer.plot_data()
-first_layer.train(100, 20, 0.95)
+# first_layer.train(100, 20, 0.95)
 #first_layer.plot_data() 
 
 
