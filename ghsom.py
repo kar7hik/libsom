@@ -195,12 +195,13 @@ class Growing_SOM():
             iteration += 1
             can_grow = self.allowed_to_grow()
             if can_grow:
-                print("Allowed to grow")
+                # print("Allowed to grow")
                 # print("Current iteration: {}".format(iteration))
                 self.grow()
                 # print(self.weight_map.shape)
             else:
-                print("Cannot grow")
+                # print("Cannot grow")
+                pass
 
         if can_grow:
             self.map_data_to_neurons()
@@ -326,13 +327,13 @@ class Growing_SOM():
         dissimilar_neuron = self.find_most_dissimilar_neuron(error_neuron)
 
         if self.are_in_same_column(error_neuron, dissimilar_neuron):
-            print("Same column")
+            # print("Same column")
             new_column_indices = self.add_column_in_between(error_neuron,
                                                             dissimilar_neuron)
             self.init_new_weight_vector(new_column_indices, "horizontal")
 
         elif self.are_in_same_row(error_neuron, dissimilar_neuron):
-            print("Same row")
+            # print("Same row")
             new_row_indices = self.add_row_in_between(error_neuron,
                                                       dissimilar_neuron)
             self.init_new_weight_vector(new_row_indices, "vertical")
@@ -750,9 +751,9 @@ data_shape = 3
 
 def plot_child(e, gmap):
     if e.inaxes is not None:
-        coords = (int(e.ydata),
-                  int(e.xdata))
-        # print(coords)
+        coords = (int(e.xdata),
+                  int(e.ydata))
+        print(coords)
         # print("Current map shape: {}".format(gmap.current_som_map.shape))
         neuron = gmap.neurons[coords]
         if neuron.child_map is not None:
@@ -794,12 +795,12 @@ input_dataset = raw_data / col_maxes[np.newaxis, :]
 
 
 tau_1 = 0.001
-tau_2 = 0.001
-learning_rate = 0.95
+tau_2 = 0.005
+learning_rate = 0.45
 growing_metric = "qe"
 
 gh = GHSOM(input_dataset, tau_1, tau_2, learning_rate, growing_metric)
-zero_unit = gh.train(15)
+zero_unit = gh.train(200)
 gmap = zero_unit.child_map.current_som_map
 g = zero_unit.child_map
 plot_data(g)

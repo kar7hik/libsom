@@ -38,10 +38,10 @@ class SOM():
             shape=(self.nrows*2-1, self.ncols*2-1, 1),
             dtype=float)
 
-        print("Init radius: {}, num_iteration: {}, time_constant: {}".format(
-            self.init_radius,
-            self.num_iteration,
-            self.time_constant))
+        # print("Init radius: {}, num_iteration: {}, time_constant: {}".format(
+        #     self.init_radius,
+        #     self.num_iteration,
+        #     self.time_constant))
 
     def get_unit_weight(self, location):
         """Get the weights associated with a given unit.
@@ -122,6 +122,9 @@ class SOM():
     def train_som(self):
         for i in tqdm(range(self.num_iteration)):
             self.som_update(i)
+
+        # for i in range(self.num_iteration):
+        #     self.som_update(i)
 
 
 class RSOM(SOM):
