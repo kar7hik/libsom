@@ -1,7 +1,7 @@
 import numpy as np
 import itertools
 from tqdm import tqdm
-
+from math import ceil
 
 class SOM():
     def __init__(self,
@@ -103,11 +103,11 @@ class SOM():
         return self.som_map + np.multiply(learning_rate, np.multiply(
             neighbor_influence, -np.subtract(self.som_map, datapoint)))
 
-    def som_update(self, current_iter):
-        random_index = self.random_input_index()
-        bmu_index = self.get_bmu(self.input_data[random_index])
-        neighbor_radius = self.decay_radius(current_iter)
-        learning_rate = self.decay_learning_rate(current_iter)
+    def som_batch_update(self,
+                         training_data,
+                         learning_rate,
+                         neighbor_radius):
+        bmu_index = self.get_bmu(training_data)
         w_dist = np.linalg.norm(self.node_list_ - bmu_index, axis=1)
         neighbor_influence = self.calculate_influence(w_dist,
                                                       neighbor_radius).reshape(
@@ -116,15 +116,64 @@ class SOM():
                                                           1)
         self.som_map = self.modify_weight_matrix(learning_rate,
                                                  neighbor_influence,
-                                                 self.input_data[random_index])
+                                                 training_data)
         # print(self.som_map)
 
-    def train_som(self):
-        # for i in tqdm(range(self.num_iteration)):
-        #     self.som_update(i)
+    def batch_training_data(self, dataset_percentage, min_size, seed):
+        dataset_size = self.input_len
+        if dataset_size <= min_size:
+            iterator = range(dataset_size)
+        else:
+            iterator = range(int(ceil(dataset_size * dataset_percentage)))
+
+        random_generator = np.random.RandomState(seed)
+        for _ in iterator:
+            yield self.input_data[random_generator.randint(dataset_size)]
+        
+    def batch_train_som(self, dataset_percentage,
+                        min_size, seed):
+        lr = self.init_learning_rate
+        nr = self.init_radius
 
         for i in range(self.num_iteration):
-            self.som_update(i)
+            for data in self.batch_training_data(dataset_percentage,
+                                                 min_size,
+                                                 seed):
+                self.som_batch_update(data, lr, nr)
+
+            nr = self.decay_radius(i)
+            lr = self.decay_learning_rate(i)
+
+
+    def som_update(self, datapoint, learning_rate, neighbor_radius):
+        bmu_index = self.get_bmu(datapoint)
+        w_dist = np.linalg.norm(self.node_list_ - bmu_index, axis=1)
+        neighbor_influence = self.calculate_influence(w_dist,
+                                                      neighbor_radius).reshape(
+                                                          self.nrows,
+                                                          self.ncols,
+                                                          1)
+        self.som_map = self.modify_weight_matrix(learning_rate,
+                                                 neighbor_influence,
+                                                 datapoint)
+            
+    def train_som(self):
+        dataset_percentage = 1.0
+        min_size = self.input_len
+        seed = None
+
+        lr = self.init_learning_rate
+        nr = self.init_radius
+
+        for i in range(self.num_iteration):
+            for data in self.batch_training_data(dataset_percentage,
+                                                 min_size,
+                                                 seed):
+                self.som_update(data, lr, nr)
+            nr = self.decay_radius(i)
+            lr = self.decay_learning_rate(i)
+                
+
 
 
 class RSOM(SOM):
@@ -319,3 +368,4 @@ def return_bmu_weights(som_obj, bmus, weights=[]):
 def print_bmus_weight(data, weights):
     for i in range(len(data)):
         print("data: {0}, wgs: {1}".format(data[i], weights[i]))
+

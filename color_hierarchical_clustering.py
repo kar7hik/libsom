@@ -49,16 +49,25 @@ input_dataset = raw_data / col_maxes[np.newaxis, :]
 #     input_dataset[i][1] = 0.0
 
 
-tau_1 = 0.01
+tau_1 = 0.1
 tau_2 = 0.005
-learning_rate = 0.45
+learning_rate = 0.15
 growing_metric = "qe"
 
+
+from timeit import default_timer as timer
+
 gh = ghsom.GHSOM(input_dataset, tau_1, tau_2, learning_rate, growing_metric)
-zero_unit = gh.train(200)
+start1 = timer()
+zero_unit = gh.train(20)
+end1 = timer()
+print(end1 - start1)
+
+
 gmap = zero_unit.child_map.current_som_map
 g = zero_unit.child_map
 plot_data(g)
+plt.show()
 
 
 
@@ -72,7 +81,7 @@ plot_data(g)
 
 # zero_neuron = zero_layer.zero_unit
 # weight_map = np.random.uniform(size=(2, 2, input_dataset.shape[1]))
-# first_layer = ghsom.Growing_SOM([2, 2],
+# first_layer = ghsom.Growing_SOM((2, 2),
 #                                 0.0037,
 #                                 weight_map,
 #                                 input_dataset,
