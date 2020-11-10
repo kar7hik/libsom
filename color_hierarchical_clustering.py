@@ -50,7 +50,7 @@ input_dataset = raw_data / col_maxes[np.newaxis, :]
 
 
 tau_1 = 0.1
-tau_2 = 0.005
+tau_2 = 0.006
 learning_rate = 0.15
 growing_metric = "qe"
 
@@ -59,7 +59,7 @@ from timeit import default_timer as timer
 
 gh = ghsom.GHSOM(input_dataset, tau_1, tau_2, learning_rate, growing_metric)
 start1 = timer()
-zero_unit = gh.train(20)
+zero_unit = gh.train(10)
 end1 = timer()
 print(end1 - start1)
 

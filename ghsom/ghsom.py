@@ -156,6 +156,9 @@ class Growing_SOM():
                  parent_dataset,
                  parent_quantization_error,
                  neuron_creator,
+                 # init_learning_rate,
+                 # init_radius,
+                 # time_constant,
                  native_update=True):
         """Constructor for Growing_SOM Class."""
         self.initial_map_size = initial_map_size
@@ -170,6 +173,14 @@ class Growing_SOM():
         self.som = None
         self.current_map_shape = self.initial_map_size
 
+        # self.node_list = np.array(list(
+        #     itertool.product(range(self.current_map_shape[0]),
+        #                      range(self.current_map_shape[1]))),
+        #                           dtype=int)
+        # self.init_learning_rate = init_learning_rate
+        # self.init_radius = init_radius
+        # self.time_constant = time_constant
+        
     def create_neurons(self):
         rows, cols = self.initial_map_size
         neurons = {(x, y): self.create_neuron((x, y))
@@ -182,6 +193,13 @@ class Growing_SOM():
                                                 self.weight_map[location[0],
                                                                 location[1]])
         return neuron
+
+    # def decay_radius(self, curr_iter):
+    #     return self.init_radius * np.exp(-current_iter / self.time_constant)
+
+    # def decay_learning_rate(self, curr_iter):
+    #     return self.init_learning_rate * \
+    #         np.exp(-current_iter / self.num_iteration)
 
     def train(self, epochs, num_iteration, learning_rate):
         iteration = 0
@@ -236,6 +254,10 @@ class Growing_SOM():
         min_size = 30
         seed = None
         neighbor_radius = 1.5
+
+        # print("Map shape: {}, weight shape: {}".format(self.current_map_shape,
+        #                                                self.weight_map.shape))
+        self.som.som_map = self.weight_map
         self.som.batch_train_som(dataset_percentage,
                                  min_size,
                                  seed)
