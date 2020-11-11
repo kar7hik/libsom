@@ -507,7 +507,7 @@ class Growing_SOM():
         first_neuron_col_value = first_neuron.get_location()[1]
         second_neuron_col_value = second_neuron.get_location()[1]        
 
-        return abs(first_neuron_col_value - second_neuron_col_value)
+        return abs(first_neuron_col_value - second_neuron_col_value) == 0
 
     @staticmethod
     def are_in_same_row(first_neuron, second_neuron):
@@ -518,7 +518,7 @@ class Growing_SOM():
         first_neuron_row_value = first_neuron.get_location()[0]
         second_neuron_row_value = second_neuron.get_location()[0]        
 
-        return abs(first_neuron_row_value - second_neuron_row_value)
+        return abs(first_neuron_row_value - second_neuron_row_value) == 0
 
     def plot_data(self):
         rows = self.current_som_map.shape[0]

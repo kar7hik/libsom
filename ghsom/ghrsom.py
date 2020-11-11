@@ -2,6 +2,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from queue import Queue
 from multiprocessing import Pool
+from matplotlib import patches as patches
+import itertools
+from math import ceil
+from tqdm import tqdm
 
 
 class Neuron():
@@ -22,6 +26,9 @@ class Neuron():
         
         self.num_input_features = self.weight_vector.shape[0]
 
+        self.previous_count = 0
+        self.current_count = 0
+
     def set_weight_vector(self, weight_vector):
         """Sets the weight vector of the neuron"""
         self.weight_vector = weight_vector
@@ -39,20 +46,22 @@ class Neuron():
         """Returns the location of the current neuron"""
         return (self.x_location, self.y_location)
 
-    def find_distance_for_dataset(self, dataset):
+    def activation(self, data):
         """
         Returns the Euclidean norm between neuron's weight vector and the \
-        whole input dataset
+        input data.
         """
-        distance = np.linalg.norm(np.subtract(self.weight_vector,
-                                              dataset),
-                                  ord=2, axis=1)
-        return distance
+        activation = 0
 
-    def activation(self, datapoint):
-        activation = np.linalg.norm(np.subtract(datapoint,
-                                                self.weight_vector),
-                                    ord=2)
+        if (len(data.shape) == 1):
+            activation = np.linalg.norm(np.subtract(data,
+                                                    self.weight_vector),
+                                        ord=2)
+        else:
+            activation = np.linalg.norm(np.subtract(data,
+                                                    self.weight_vector),
+                                        ord=2,
+                                        axis=1)
         return activation
 
     def compute_quantization_error(self, growing_metric=None):
@@ -61,7 +70,7 @@ class Neuron():
         """
         if growing_metric is None:
             growing_metric = self.growing_metric
-        distance_from_whole_dataset = self.find_weight_distance_to_other_unit(self.input_dataset)
+        distance_from_whole_dataset = self.activation(self.input_dataset)
         quantization_error = distance_from_whole_dataset.sum()
 
         if (self.growing_metric == "mqe"):
@@ -104,13 +113,19 @@ class Neuron():
         """
         Replaces the current input dataset of the neuron with the given dataset
         """
+        self.current_count = len(dataset)
         self.input_dataset = dataset
 
     def clear_dataset(self):
         """
         Clears the current input dataset of the neuron
         """
+        self.previous_count = self.current_count
+        self.current_count = 0
         self.input_dataset = self.init_empty_dataset()
+
+    def has_changed_from_previous_epoch(self):
+        return self.previous_count != self.current_count
 
 
 
@@ -161,24 +176,32 @@ class Growing_SOM():
         self.weight_map = weight_map
         self.parent_dataset = parent_dataset
         self.parent_quantization_error = parent_quantization_error
-        self.num_input_features = parent_dataset.shape[1]
+
+        # Input data parameters
+        self.input_data_length = self.parent_dataset.shape[0]
+        self.num_input_features = self.parent_dataset.shape[1]
+        
         self.map_growing_coefficient = map_growing_coefficient
 
         self.neuron_creator = neuron_creator
         self.neurons = self.create_neurons()
 
-        self.current_som_map = weight_map
         self.current_map_shape = self.initial_map_size
+        self.nrows, self.ncols = self.initial_map_size
 
+        self.node_list = np.array(list(
+            itertools.product(range(self.nrows), range(self.ncols))),
+                                   dtype=int)
         # self.node_list = np.array(list(
         #     itertool.product(range(self.current_map_shape[0]),
         #                      range(self.current_map_shape[1]))),
         #                           dtype=int)
 
-        self.som = None
-        self.init_learning_rate = None
-        self.init_radius = None
+        self.initial_learning_rate = None
+        self.initial_neighbor_radius = None
         self.time_constant = None
+        self.epochs = None
+        self.max_iter = None
 
 
     def create_neurons(self):
@@ -194,139 +217,347 @@ class Growing_SOM():
                                                                 location[1]])
         return neuron
 
-    def train(self,
-              epochs,
-              max_iteration,
-              init_learning_rate,
-              init_radius,
-              dataset_percentage,
-              min_dataset_size):
-        iteration = 0
-        can_grow = True
+    def training_data(self, dataset_percentage, min_dataset_size, seed):
+        dataset_size = self.input_data_length
+        if dataset_size <= min_dataset_size:
+            iterator = range(dataset_size)
+        else:
+            iterator = range(int(ceil(dataset_size * dataset_percentage)))
 
-        while can_grow and (iteration < max_iteration):
-            self.neurons_training(epochs,
-                                  init_learning_rate,
-                                  init_radius,
-                                  dataset_percentage,
-                                  min_dataset_size)
-            iteration += 1
-            can_grow = self.allowed_to_grow()
+        random_generator = np.random.RandomState(seed)
+        for dummy in iterator:
+            yield self.parent_dataset[random_generator.randint(dataset_size)]
 
-            if can_grow:
-                self.grow()
-
-        if can_grow:
-            self.map_data_to_neurons()
-
-        return self
-
-    def neurons_training(self,
-                         epochs,
-                         init_learning_rate,
-                         init_radius,
-                         dataset_percentage,
-                         min_dataset_size):
-        lr = init_learning_rate
-        neighbor_radius = init_radius
-
-        for iteration in range(epochs):
-            self.som_batch_update(self.)
-    
-    def decay_radius(self, current_iter):
-        return self.init_radius * np.exp(-current_iter / self.time_constant)
+    def decay_neighbor_radius(self, current_iter):
+        return self.initial_neighbor_radius * \
+            np.exp(-current_iter / self.time_constant)
 
     def decay_learning_rate(self, current_iter):
-        return self.init_learning_rate * \
-            np.exp(-current_iter / self.num_iteration)
+        return self.initial_learning_rate * \
+            np.exp(-current_iter / self.epochs)
 
     def calculate_influence(self, w_dist, neighbor_radius):
         pseudogaussian = np.exp(-np.divide(np.power(w_dist, 2),
                                            (2 * np.power(neighbor_radius, 2))))
         return pseudogaussian
 
-    def modify_weight_matrix(self, learning_rate,
-                             neighbor_influence, datapoint):
+    def get_bmu(self, data):
+        number_of_data = None
+        distances = None
+        
+        if (len(data.shape) == 1):
+            number_of_data = 1
+        else:
+            number_of_data = data.shape[0]
+
+        distances = np.empty(shape=(number_of_data,
+                                    len(self.neurons.values())))
+        
+        neurons_list = list(self.neurons.values())
+        for idx, neuron in enumerate(neurons_list):
+            distances[:, idx] = neuron.activation(data)
+
+
+        # print("Distances: {}".format(distances))
+        winner_neuron_per_data = distances.argmin(axis=1)
+        # print("Winner neuron per data: {}".format(winner_neuron_per_data))
+        map_data_to_neurons = [[position for position in np.where(winner_neuron_per_data == neuron_idx)[0]]
+                               for neuron_idx in range(len(neurons_list))]
+        # print("map data to neurons: {}".format(map_data_to_neurons))
+        winner_neurons = [neurons_list[idx] for idx in winner_neuron_per_data]
+        # print("winner_neurons: {}".format(winner_neurons))
+        return winner_neurons, map_data_to_neurons
+
+    def train(self,
+              epochs,
+              initial_learning_rate,
+              initial_neighbor_radius,
+              dataset_percentage,
+              min_dataset_size,
+              max_iter):
+
+        # Initializing parameters:
+        self.initial_learning_rate = initial_learning_rate
+        self.initial_neighbor_radius = initial_neighbor_radius
+        self.epochs = epochs
+        self.max_iter = max_iter
+
+        self.time_constant = self.epochs / np.log(self.initial_neighbor_radius)
+
+        
+        iteration = 0
+        can_grow = True
+        while can_grow and (iteration < max_iter):
+            self.neuron_training(epochs,
+                                 initial_learning_rate,
+                                 initial_neighbor_radius,
+                                 dataset_percentage,
+                                 min_dataset_size,)
+            iteration += 1
+            can_grow = self.allowed_to_grow()
+            if can_grow:
+                print("Allowed to grow!")
+                self.grow()
+                # print("shape: {}, rows: {}, cols: {}".format(self.current_map_shape,
+                #                                              self.nrows, self.ncols))
+                self.node_list = np.array(list(
+                    itertools.product(range(self.weight_map.shape[0]),
+                                      range(self.weight_map.shape[1]))),
+                                           dtype=int)
+        if can_grow:
+            self.map_data_to_neurons()
+
+        return self
+
+    def neuron_training(self,
+                        epochs,
+                        initial_learning_rate,
+                        initial_neighbor_radius,
+                        dataset_percentage,
+                        min_dataset_size):
+        lr = initial_learning_rate
+        nr = initial_neighbor_radius
+
+        for iteration in tqdm(range(epochs)):
+            for data in self.training_data(dataset_percentage,
+                                           min_dataset_size,
+                                           seed=None):
+                self.som_update(data, lr, nr)
+
+            lr = self.decay_learning_rate(iteration)
+            nr = self.decay_neighbor_radius(iteration)
+
+    def som_update(self, datapoint, learning_rate, neighbor_radius):
+        winner_neuron, data_to_neuron = self.get_bmu(datapoint)
+        print(datapoint.shape)
+        w_dist = np.linalg.norm(self.node_list - winner_neuron[0].get_location(),
+                                axis=1)
+        neighbor_influence = self.calculate_influence(w_dist,
+                                                      neighbor_radius).reshape(
+                                                          self.nrows,
+                                                          self.ncols,
+                                                          1)
+        self.weight_map = self.modify_weight_matrix(learning_rate,
+                                                         neighbor_influence,
+                                                         datapoint)
+
+    def modify_weight_matrix(self,
+                             learning_rate,
+                             neighbor_influence,
+                             datapoint):
         """Modify weight matrix of the SOM for the online algorithm.
         Returns
         -------
         np.array
         Weight vector of the SOM after the modification
         """
-        return self.som_map + np.multiply(learning_rate, np.multiply(
-            neighbor_influence, -np.subtract(self.som_map, datapoint)))
+        return self.weight_map + np.multiply(learning_rate, np.multiply(
+            neighbor_influence, -np.subtract(self.weight_map, datapoint)))
 
-    def som_batch_update(self,
-                         training_data,
-                         learning_rate,
-                         neighbor_radius):
-        bmu_index = self.get_bmu(training_data)
-        w_dist = np.linalg.norm(self.node_list_ - bmu_index, axis=1)
-        neighbor_influence = self.calculate_influence(w_dist,
-                                                      neighbor_radius).reshape(
-                                                          self.nrows,
-                                                          self.ncols,
-                                                          1)
-        self.som_map = self.modify_weight_matrix(learning_rate,
-                                                 neighbor_influence,
-                                                 training_data)
-        # print(self.som_map)
-
-    def batch_training_data(self, dataset_percentage, min_size, seed):
-        dataset_size = self.input_len
-        if dataset_size <= min_size:
-            iterator = range(dataset_size)
-        else:
-            iterator = range(int(ceil(dataset_size * dataset_percentage)))
-
-        random_generator = np.random.RandomState(seed)
-        for _ in iterator:
-            yield self.input_data[random_generator.randint(dataset_size)]
+    def allowed_to_grow(self):
+        self.map_data_to_neurons()
         
-    def batch_train_som(self, dataset_percentage,
-                        min_size, seed):
-        lr = self.init_learning_rate
-        nr = self.init_radius
+        MQE = 0.0
+        mapped_neurons = 0
+        changed_neurons = 0
 
-        for i in range(self.num_iteration):
-            for data in self.batch_training_data(dataset_percentage,
-                                                 min_size,
-                                                 seed):
-                self.som_batch_update(data, lr, nr)
+        assert self.parent_quantization_error is not None, \
+            "Parent Quantization Error must not be None"
 
-            nr = self.decay_radius(i)
-            lr = self.decay_learning_rate(i)
+        for neuron in self.neurons.values():
+            changed_neurons += 1 if neuron.has_changed_from_previous_epoch() else 0
+            if neuron.has_dataset():
+                MQE =+ neuron.compute_quantization_error()
+                mapped_neurons += 1
+
+        return ((MQE / mapped_neurons) >= (self.map_growing_coefficient *
+                                           self.parent_quantization_error)) and \
+                                           (changed_neurons > int(np.round(mapped_neurons / 5)))
+
+    def map_data_to_neurons(self):
+        input_dataset = self.parent_dataset
+        for neuron in self.neurons.values():
+            neuron.clear_dataset()
+
+        _, data_to_neuron = self.get_bmu(self.parent_dataset)
+        neurons = list(self.neurons.values())
+        for idx, data_idxs in enumerate(data_to_neuron):
+            neurons[idx].replace_dataset(self.parent_dataset[data_idxs, :])
+
+    def find_error_neuron(self):
+        quantization_errors = list()
+        for neuron in self.neurons.values():
+            quantization_error = -np.inf
+            if neuron.has_dataset():
+                quantization_error = neuron.compute_quantization_error()
+            quantization_errors.append(quantization_error)
+
+        # print("Current map shape: {}".format(self.current_map_shape))
+        error_neuron_index = np.unravel_index(np.argmax(quantization_errors),
+                                              shape=self.current_map_shape)
+        error_list_index = np.argmax(quantization_errors)
+        # print("error index: {}".format(error_neuron_index))
+        error_neuron = self.neurons[error_neuron_index]
+        return error_neuron, error_neuron_index
+
+    def find_most_dissimilar_neuron(self, error_neuron):
+        weight_distances = dict()
+
+        for neuron in self.neurons.values():
+            if self.are_neighbors(error_neuron, neuron):
+                weight_distance = error_neuron.find_weight_distance_to_other_unit(neuron)
+                weight_distances[neuron] = weight_distance
+
+        dissimilar_neuron = max(weight_distances, key=weight_distances.get)
+        return dissimilar_neuron
+
+    def grow(self):
+        error_neuron, error_neuron_index = self.find_error_neuron()
+        dissimilar_neuron = self.find_most_dissimilar_neuron(error_neuron)
+
+        if self.are_in_same_column(error_neuron, dissimilar_neuron):
+            new_column_indices = self.add_column_in_between(error_neuron,
+                                                            dissimilar_neuron)
+            print("Same Column")
+            self.init_new_weight_vector(new_column_indices, "horizontal")
+
+        elif self.are_in_same_row(error_neuron, dissimilar_neuron):
+            new_row_indices = self.add_row_in_between(error_neuron,
+                                                      dissimilar_neuron)
+            print("Same Row")
+            self.init_new_weight_vector(new_row_indices, "vertical")
+
+        else:
+            raise RuntimeError("Error neuron and the most dissimilar are not adjacent")
+
+    def add_column_in_between(self, error_neuron, dissimilar_neuron):
+        error_col = error_neuron.get_location()[1]
+        dissimilar_col = dissimilar_neuron.get_location()[1]
+        new_column_idx = max(error_col, dissimilar_col)
+        map_rows, map_cols = self.current_map_shape
+        
+        # new_column_idx = 2 then [(0, 2), (1, 2), (2, 2)]
+        new_line_idx = [(row, new_column_idx) for row in range(map_rows)]
+        print("Adding column")
+
+        for row in range(map_rows):
+            for col in reversed(range(new_column_idx, map_cols)):
+                new_idx = (row, col+1)
+                neuron = self.neurons.pop((row, col))
+                neuron.set_location(new_idx)
+                self.neurons[new_idx] = neuron
 
 
-    def som_update(self, datapoint, learning_rate, neighbor_radius):
-        bmu_index = self.get_bmu(datapoint)
-        w_dist = np.linalg.norm(self.node_list_ - bmu_index, axis=1)
-        neighbor_influence = self.calculate_influence(w_dist,
-                                                      neighbor_radius).reshape(
-                                                          self.nrows,
-                                                          self.ncols,
-                                                          1)
-        self.som_map = self.modify_weight_matrix(learning_rate,
-                                                 neighbor_influence,
-                                                 datapoint)
+        line = np.zeros(shape=(map_rows, self.num_input_features),
+                        dtype=np.float32)
+        self.weight_map = np.insert(self.weight_map,
+                                    new_column_idx,
+                                    line,
+                                    axis=1)
+
+        # Update the current map shape
+        # self.current_map_shape = self.neurons.shape
+        self.current_map_shape = (self.weight_map.shape[0],
+                                  self.weight_map.shape[1])
+        print("Current neurons map shape: {}".format(self.current_map_shape))
+        return new_line_idx
+
+    def add_row_in_between(self, error_neuron, dissimilar_neuron):
+        """
+        Adds an entire row between the error neuron and the dissimilar
+        neuron
+        """
+        error_row = error_neuron.get_location()[0]
+        dissimilar_row = dissimilar_neuron.get_location()[0]
+        new_row_idx = max(error_row, dissimilar_row)
+        map_rows, map_cols = self.current_map_shape
+
+        
+        # new_row_idx = 2 then [(2, 0), (2, 1), (2, 2)]
+        new_line_idx = [(new_row_idx, col) for col in range(map_cols)]
+        # print("new_row_line_idx: {}".format(new_line_idx))
+        print("Adding row")
+
+        for row in reversed(range(new_row_idx, map_rows)):
+            for col in range(map_cols):
+                new_idx = (row+1, col)
+                neuron = self.neurons.pop((row, col))
+                neuron.set_location(new_idx)
+                self.neurons[new_idx] = neuron
+
+        line = np.zeros(shape=(map_cols, self.num_input_features),
+                        dtype=np.float32)
+        self.weight_map = np.insert(self.weight_map,
+                                    new_row_idx,
+                                    line,
+                                    axis=0)
+                
+        # Update the current map shape
+        self.current_map_shape = (self.weight_map.shape[0], self.weight_map.shape[1])
+        return new_line_idx
+
+
+    def init_new_weight_vector(self, new_neuron_idxs, direction):
+        for row, col in new_neuron_idxs:
+            # empty_weight_vector = np.zeros(shape=(self.num_input_features))
+            # self.neurons[(row, col)] = self.create_neuron([row, col],
+            #                                               empty_weight_vector)
+            adjacent_neuron_idxs = self.get_adjacent_neuron_idxs(row,
+                                                                 col,
+                                                                 direction)
+            weight_vector = self.mean_weight_vector(adjacent_neuron_idxs)
+            # print("row: {0}, col: {1}".format(row, col))
+            # print(weight_vector)
+            self.weight_map[row, col] = weight_vector
+            self.neurons[(row, col)] = self.create_neuron((row, col))
             
-    def train_som(self):
-        dataset_percentage = 1.0
-        min_size = self.input_len
-        seed = None
+    @staticmethod
+    def get_adjacent_neuron_idxs(row, col, direction):
+        adjacent_neuron_idxs = list()
+        if direction == "horizontal":
+            adjacent_neuron_idxs = [(row, col - 1), (row, col + 1)]
 
-        lr = self.init_learning_rate
-        nr = self.init_radius
+        elif direction == "vertical":
+            adjacent_neuron_idxs = [(row - 1, col), (row + 1, col)]
 
-        for i in range(self.num_iteration):
-            for data in self.batch_training_data(dataset_percentage,
-                                                 min_size,
-                                                 seed):
-                self.som_update(data, lr, nr)
-            nr = self.decay_radius(i)
-            lr = self.decay_learning_rate(i)
-    
-    
+        return adjacent_neuron_idxs
+
+    def mean_weight_vector(self, neuron_idxs):
+        weight_vector = np.zeros(shape=self.num_input_features, dtype=np.float32)
+        for adjacent_idx in neuron_idxs:
+            # print(adjacent_idx)
+            weight_vector += 0.5 * self.neurons[adjacent_idx].weight_vector
+        return weight_vector
+
+    @staticmethod
+    def are_neighbors(first_neuron, second_neuron):
+        return np.linalg.norm(np.asarray(first_neuron.get_location()) -
+                              np.asarray(second_neuron.get_location()),
+                              ord=1) == 1
+
+    @staticmethod
+    def are_in_same_column(first_neuron, second_neuron):
+        """
+        Checks whether the two neurons are in the same column.
+        If they are in same column, the difference would be equal to zero.
+        """
+        first_neuron_col_value = first_neuron.get_location()[1]
+        second_neuron_col_value = second_neuron.get_location()[1]        
+
+        return abs(first_neuron_col_value - second_neuron_col_value) == 0
+
+    @staticmethod
+    def are_in_same_row(first_neuron, second_neuron):
+        """
+        Checks whether the two neurons are in the same row.
+        If they are in same row, the difference would be equal to zero.
+        """
+        first_neuron_row_value = first_neuron.get_location()[0]
+        second_neuron_row_value = second_neuron.get_location()[0]        
+
+        return abs(first_neuron_row_value - second_neuron_row_value) == 0
+
+
 # Testing Section #############################################################
 hierarchical_growing_coefficient = 0.001
 empty_weight_vector = np.zeros(shape=(0, 3), dtype=float)
@@ -337,7 +568,44 @@ col_maxes = raw_data.max(axis=0)
 input_dataset = raw_data / col_maxes[np.newaxis, :]
 
 
-
 neuron_creator = Neuron_Creator(hierarchical_growing_coefficient,
                                 "qe")
+zero_layer = neuron_creator.zero_neuron(input_dataset)
+zero_layer.activation(input_dataset)
+weight_map = np.random.uniform(size=(2, 2, input_dataset.shape[1]))
+er = zero_layer.compute_quantization_error()
 
+first_layer = Growing_SOM((2, 2),
+                          0.001,
+                          weight_map,
+                          input_dataset,
+                          er,
+                          neuron_creator)
+
+
+
+
+def plot_data(current_som_map):
+    rows = current_som_map.shape[0]
+    cols = current_som_map.shape[1]
+    som_map = current_som_map
+        
+    fig = plt.figure()
+    ax = fig.add_subplot(111, aspect='equal')
+    ax.set_xlim((0, rows + 1))
+    ax.set_ylim((0, cols + 1))
+    
+    for x in range(1, rows + 1):
+        for y in range(1, cols + 1):
+            ax.add_patch(patches.Rectangle((x-0.5, y-0.5), 1, 1,
+                                           facecolor=som_map[x-1, y-1, :],
+                                           edgecolor='none'))
+    plt.show()
+
+
+print("Som map size: {}".format(first_layer.weight_map.shape))
+print(er)
+first_layer.train(10, 0.45, 1.5, 0.5, 30, 10)
+plot_data(first_layer.weight_map)
+print("Som map size: {}".format(first_layer.weight_map.shape))
+print(er)

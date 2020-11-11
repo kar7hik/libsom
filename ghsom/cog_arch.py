@@ -25,6 +25,7 @@ class SOM():
         self.node_list_ = np.array(list(
             itertools.product(range(self.nrows), range(self.ncols))),
             dtype=int)
+        
         self.init_learning_rate = init_learning_rate
         if init_radius is None:
             self.init_radius = max(self.nrows, self.ncols) / 2
