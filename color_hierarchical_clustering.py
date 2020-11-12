@@ -1,4 +1,4 @@
-import ghsom
+import ghrsom
 import matplotlib.pyplot as plt
 from matplotlib import patches as patches
 import numpy as np
