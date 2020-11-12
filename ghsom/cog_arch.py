@@ -3,6 +3,7 @@ import itertools
 from tqdm import tqdm
 from math import ceil
 
+
 class SOM():
     def __init__(self,
                  nrows,

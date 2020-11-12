@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from queue import Queue
-from multiprocessing import Pool
+# from queue import Queue
+# from multiprocessing import Pool
 from matplotlib import patches as patches
 import itertools
 from math import ceil
@@ -192,10 +192,6 @@ class Growing_SOM():
         self.node_list = np.array(list(
             itertools.product(range(self.nrows), range(self.ncols))),
                                    dtype=int)
-        # self.node_list = np.array(list(
-        #     itertool.product(range(self.current_map_shape[0]),
-        #                      range(self.current_map_shape[1]))),
-        #                           dtype=int)
 
         self.initial_learning_rate = None
         self.initial_neighbor_radius = None
@@ -241,6 +237,9 @@ class Growing_SOM():
                                            (2 * np.power(neighbor_radius, 2))))
         return pseudogaussian
 
+    def calculate_influence_v2(self, w_dist, neighbor_radius):
+        return np.exp(-w_dist / (2 * (neighbor_radius ** 2)))
+
     def get_bmu(self, data):
         number_of_data = None
         distances = None
@@ -257,15 +256,14 @@ class Growing_SOM():
         for idx, neuron in enumerate(neurons_list):
             distances[:, idx] = neuron.activation(data)
 
-
-        # print("Distances: {}".format(distances))
+        # winner neurons for the given input data
         winner_neuron_per_data = distances.argmin(axis=1)
-        # print("Winner neuron per data: {}".format(winner_neuron_per_data))
+
         map_data_to_neurons = [[position for position in np.where(winner_neuron_per_data == neuron_idx)[0]]
                                for neuron_idx in range(len(neurons_list))]
-        # print("map data to neurons: {}".format(map_data_to_neurons))
         winner_neurons = [neurons_list[idx] for idx in winner_neuron_per_data]
-        # print("winner_neurons: {}".format(winner_neurons))
+
+
         return winner_neurons, map_data_to_neurons
 
     def train(self,
@@ -298,12 +296,6 @@ class Growing_SOM():
             if can_grow:
                 print("Allowed to grow!")
                 self.grow()
-                # print("shape: {}, rows: {}, cols: {}".format(self.current_map_shape,
-                #                                              self.nrows, self.ncols))
-                self.node_list = np.array(list(
-                    itertools.product(range(self.weight_map.shape[0]),
-                                      range(self.weight_map.shape[1]))),
-                                           dtype=int)
         if can_grow:
             self.map_data_to_neurons()
 
@@ -324,22 +316,63 @@ class Growing_SOM():
                                            seed=None):
                 self.som_update(data, lr, nr)
 
+                ### For an alternate SOM update:
+                # self.som_update_v1(data, lr, nr)
+
             lr = self.decay_learning_rate(iteration)
             nr = self.decay_neighbor_radius(iteration)
 
+    def map_shape(self):
+        shape = self.weight_map.shape
+        return shape[0], shape[1]
+
+    def som_update_v1(self, data, learning_rate, sigma):
+        gauss_kernel = self.gaussian_kernel(self.get_bmu(data)[0][0],
+                                              sigma)
+        for neuron in self.neurons.values():
+            weight = neuron.weight_vector
+            weight += learning_rate * gauss_kernel[neuron.get_location()] * \
+                (data - weight)
+            self.weight_map[neuron.get_location()] = weight
+
+    def gaussian_kernel(self, winner_neuron, gaussian_sigma):
+        # computing gaussian kernel
+        winner_row, winner_col = winner_neuron.get_location()
+        s = 2 * (gaussian_sigma ** 2)
+
+        gauss_col = np.power(np.arange(self.map_shape()[1]) - winner_col,
+                             2) / s
+        gauss_row = np.power(np.arange(self.map_shape()[0]) - winner_row,
+                             2) / s
+        gaussian_kernel = np.outer(np.exp(-1 * gauss_row), np.exp(-1 * gauss_col))
+
+        return gaussian_kernel
+
     def som_update(self, datapoint, learning_rate, neighbor_radius):
         winner_neuron, data_to_neuron = self.get_bmu(datapoint)
-        print(datapoint.shape)
-        w_dist = np.linalg.norm(self.node_list - winner_neuron[0].get_location(),
+
+        # winner neuron is in a list. To obtain the winner neuron -> winner_neuron[0]
+        winner_neuron = winner_neuron[0]
+        nrows, ncols = self.current_map_shape
+
+        self.node_list = np.array(list(
+            itertools.product(range(self.weight_map.shape[0]),
+                              range(self.weight_map.shape[1]))),
+                                  dtype=int)
+        w_dist = np.linalg.norm(self.node_list - winner_neuron.get_location(),
                                 axis=1)
+
+        # Cross checking with gaussian kernel function for neighbor_influence
+        # gauss = self.gaussian_kernel(winner_neuron,
+        #                              neighbor_radius)
         neighbor_influence = self.calculate_influence(w_dist,
                                                       neighbor_radius).reshape(
-                                                          self.nrows,
-                                                          self.ncols,
+                                                          nrows,
+                                                          ncols,
                                                           1)
-        self.weight_map = self.modify_weight_matrix(learning_rate,
-                                                         neighbor_influence,
-                                                         datapoint)
+        self.modify_weight_matrix(learning_rate,
+                                  neighbor_influence,
+                                  datapoint)
 
     def modify_weight_matrix(self,
                              learning_rate,
@@ -351,8 +384,12 @@ class Growing_SOM():
         np.array
         Weight vector of the SOM after the modification
         """
-        return self.weight_map + np.multiply(learning_rate, np.multiply(
-            neighbor_influence, -np.subtract(self.weight_map, datapoint)))
+
+        for neuron in self.neurons.values():
+            weight = neuron.weight_vector
+            weight += learning_rate * neighbor_influence[neuron.get_location()] * \
+                (datapoint - weight)
+            self.weight_map[neuron.get_location()] = weight
 
     def allowed_to_grow(self):
         self.map_data_to_neurons()
@@ -392,13 +429,12 @@ class Growing_SOM():
                 quantization_error = neuron.compute_quantization_error()
             quantization_errors.append(quantization_error)
 
-        # print("Current map shape: {}".format(self.current_map_shape))
+
         error_neuron_index = np.unravel_index(np.argmax(quantization_errors),
                                               shape=self.current_map_shape)
-        error_list_index = np.argmax(quantization_errors)
-        # print("error index: {}".format(error_neuron_index))
-        error_neuron = self.neurons[error_neuron_index]
-        return error_neuron, error_neuron_index
+        # error_list_index = np.argmax(quantization_errors)
+        # error_neuron = self.neurons[error_neuron_index]
+        return self.neurons[error_neuron_index]
 
     def find_most_dissimilar_neuron(self, error_neuron):
         weight_distances = dict()
@@ -412,20 +448,22 @@ class Growing_SOM():
         return dissimilar_neuron
 
     def grow(self):
-        error_neuron, error_neuron_index = self.find_error_neuron()
+        error_neuron = self.find_error_neuron()
         dissimilar_neuron = self.find_most_dissimilar_neuron(error_neuron)
 
-        if self.are_in_same_column(error_neuron, dissimilar_neuron):
-            new_column_indices = self.add_column_in_between(error_neuron,
-                                                            dissimilar_neuron)
-            print("Same Column")
-            self.init_new_weight_vector(new_column_indices, "horizontal")
-
-        elif self.are_in_same_row(error_neuron, dissimilar_neuron):
-            new_row_indices = self.add_row_in_between(error_neuron,
+        if self.are_in_same_row(error_neuron, dissimilar_neuron):
+            new_row_indices = self.add_column_in_between(error_neuron,
                                                       dissimilar_neuron)
             print("Same Row")
-            self.init_new_weight_vector(new_row_indices, "vertical")
+            self.init_new_weight_vector(new_row_indices,
+                                        "horizontal")
+        
+        elif self.are_in_same_column(error_neuron, dissimilar_neuron):
+            new_column_indices = self.add_row_in_between(error_neuron,
+                                                            dissimilar_neuron)
+            print("Same Column")
+            self.init_new_weight_vector(new_column_indices,
+                                        "vertical")
 
         else:
             raise RuntimeError("Error neuron and the most dissimilar are not adjacent")
@@ -435,14 +473,15 @@ class Growing_SOM():
         dissimilar_col = dissimilar_neuron.get_location()[1]
         new_column_idx = max(error_col, dissimilar_col)
         map_rows, map_cols = self.current_map_shape
-        
+
+        print("Map shape: {}".format(self.current_map_shape))
         # new_column_idx = 2 then [(0, 2), (1, 2), (2, 2)]
         new_line_idx = [(row, new_column_idx) for row in range(map_rows)]
         print("Adding column")
 
         for row in range(map_rows):
             for col in reversed(range(new_column_idx, map_cols)):
-                new_idx = (row, col+1)
+                new_idx = (row, col + 1)
                 neuron = self.neurons.pop((row, col))
                 neuron.set_location(new_idx)
                 self.neurons[new_idx] = neuron
@@ -472,7 +511,8 @@ class Growing_SOM():
         new_row_idx = max(error_row, dissimilar_row)
         map_rows, map_cols = self.current_map_shape
 
-        
+
+        print("Map shape: {}".format(self.current_map_shape))
         # new_row_idx = 2 then [(2, 0), (2, 1), (2, 2)]
         new_line_idx = [(new_row_idx, col) for col in range(map_cols)]
         # print("new_row_line_idx: {}".format(new_line_idx))
@@ -494,6 +534,7 @@ class Growing_SOM():
                 
         # Update the current map shape
         self.current_map_shape = (self.weight_map.shape[0], self.weight_map.shape[1])
+        print("Current neurons map shape: {}".format(self.current_map_shape))
         return new_line_idx
 
 
@@ -520,12 +561,13 @@ class Growing_SOM():
         elif direction == "vertical":
             adjacent_neuron_idxs = [(row - 1, col), (row + 1, col)]
 
+        # print("Adjacent neuron indices: {}".format(adjacent_neuron_idxs))
         return adjacent_neuron_idxs
 
     def mean_weight_vector(self, neuron_idxs):
         weight_vector = np.zeros(shape=self.num_input_features, dtype=np.float32)
+
         for adjacent_idx in neuron_idxs:
-            # print(adjacent_idx)
             weight_vector += 0.5 * self.neurons[adjacent_idx].weight_vector
         return weight_vector
 
@@ -534,17 +576,6 @@ class Growing_SOM():
         return np.linalg.norm(np.asarray(first_neuron.get_location()) -
                               np.asarray(second_neuron.get_location()),
                               ord=1) == 1
-
-    @staticmethod
-    def are_in_same_column(first_neuron, second_neuron):
-        """
-        Checks whether the two neurons are in the same column.
-        If they are in same column, the difference would be equal to zero.
-        """
-        first_neuron_col_value = first_neuron.get_location()[1]
-        second_neuron_col_value = second_neuron.get_location()[1]        
-
-        return abs(first_neuron_col_value - second_neuron_col_value) == 0
 
     @staticmethod
     def are_in_same_row(first_neuron, second_neuron):
@@ -557,12 +588,23 @@ class Growing_SOM():
 
         return abs(first_neuron_row_value - second_neuron_row_value) == 0
 
+    @staticmethod
+    def are_in_same_column(first_neuron, second_neuron):
+        """
+        Checks whether the two neurons are in the same column.
+        If they are in same column, the difference would be equal to zero.
+        """
+        first_neuron_col_value = first_neuron.get_location()[1]
+        second_neuron_col_value = second_neuron.get_location()[1]        
+
+        return abs(first_neuron_col_value - second_neuron_col_value) == 0
+
 
 # Testing Section #############################################################
-hierarchical_growing_coefficient = 0.001
+hierarchical_growing_coefficient = 0.1
 empty_weight_vector = np.zeros(shape=(0, 3), dtype=float)
 
-raw_data = np.random.randint(0, 255, (1000, 3))
+raw_data = np.random.randint(0, 255, (500, 3))
 data = raw_data
 col_maxes = raw_data.max(axis=0)
 input_dataset = raw_data / col_maxes[np.newaxis, :]
@@ -583,8 +625,6 @@ first_layer = Growing_SOM((2, 2),
                           neuron_creator)
 
 
-
-
 def plot_data(current_som_map):
     rows = current_som_map.shape[0]
     cols = current_som_map.shape[1]
@@ -602,10 +642,5 @@ def plot_data(current_som_map):
                                            edgecolor='none'))
     plt.show()
 
-
-print("Som map size: {}".format(first_layer.weight_map.shape))
-print(er)
-first_layer.train(10, 0.45, 1.5, 0.5, 30, 10)
+first_layer.train(10, 0.95, 1.5, 0.5, 30, 10)
 plot_data(first_layer.weight_map)
-print("Som map size: {}".format(first_layer.weight_map.shape))
-print(er)
