@@ -735,7 +735,6 @@ class GHSOM():
             for r in range(row - 1, row + 1)
             for c in range(col - 1, col + 1)
         ])
-        
 
     def check_position(self, position, map_shape):
         row, col = position
