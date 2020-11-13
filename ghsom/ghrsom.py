@@ -720,8 +720,6 @@ class GHSOM():
         return np.asarray(list(filter(lambda pos: self.check_position(pos,
                                                                       map_shape),
                                       stencil + child_location)))
-        
-
 
     @staticmethod
     def element_from_position_list(matrix, positions_list):
