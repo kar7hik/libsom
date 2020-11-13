@@ -127,20 +127,20 @@ class Neuron():
 
 
 class Neuron_Creator():
-    zero_unit_quantization_error = None
+    zero_quantization_error = None
     def __init__(self, hierarchical_growing_coefficient, growing_metric="qe"):
         # TODO: Better name for tau_2
         self.hierarchical_growing_coefficient = hierarchical_growing_coefficient
         self.growing_metric = growing_metric
 
     def new_neuron(self, neuron_location, weight_vector):
-        assert self.zero_unit_quantization_error is not None, \
+        assert self.zero_quantization_error is not None, \
             "Unit zero's quantization error has not been set yet."
         return Neuron(neuron_location,
                       weight_vector,
                       self.growing_metric,
                       self.hierarchical_growing_coefficient,
-                      self.zero_unit_quantization_error)
+                      self.zero_quantization_error)
 
     def zero_neuron(self, input_dataset):
         zero_neuron = Neuron((0, 0),
@@ -149,7 +149,7 @@ class Neuron_Creator():
                              None,
                              None)
         zero_neuron.input_dataset = input_dataset
-        self.zero_unit_quantization_error = zero_neuron.compute_quantization_error()
+        self.zero_quantization_error = zero_neuron.compute_quantization_error()
         
         return zero_neuron
 
@@ -310,10 +310,10 @@ class Growing_SOM():
             for data in self.training_data(dataset_percentage,
                                            min_dataset_size,
                                            seed=None):
-                # self.som_update(data, lr, nr)
+                self.som_update(data, lr, nr)
 
                 ### For an alternate SOM update:
-                self.som_update_v1(data, lr, nr)
+                # self.som_update_v1(data, lr, nr)
 
             lr = self.decay_learning_rate(iteration)
             nr = self.decay_neighbor_radius(iteration)
@@ -400,9 +400,10 @@ class Growing_SOM():
         for neuron in self.neurons.values():
             changed_neurons += 1 if neuron.has_changed_from_previous_epoch() else 0
             if neuron.has_dataset():
-                MQE =+ neuron.compute_quantization_error()
+                MQE += neuron.compute_quantization_error()
                 mapped_neurons += 1
 
+        print("MQE: {}".format(MQE))
         return ((MQE / mapped_neurons) >= (self.map_growing_coefficient *
                                            self.parent_quantization_error)) and \
                                            (changed_neurons > int(np.round(mapped_neurons / 5)))
@@ -620,10 +621,11 @@ class GHSOM():
 
 
     def calc_initial_random_weights(self):
+        random_generator = np.random.RandomState(None)
         random_weights = np.zeros(shape=(2, 2, self.num_input_features))
 
         for location in np.ndindex(2, 2):
-            random_data_index = np.random.randint(len(self.input_dataset))
+            random_data_index = random_generator.randint(len(self.input_dataset))
             random_data_item = self.input_dataset[random_data_index]
             random_weights[location] = random_data_item
 
@@ -642,8 +644,9 @@ class GHSOM():
 
     def create_zero_neuron(self):
         zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
+        print()
         zero_neuron.child_map = self.create_new_GSOM(
-            self.neuron_creator.zero_unit_quantization_error,
+            self.neuron_creator.zero_quantization_error,
             zero_neuron.input_dataset,
             self.calc_initial_random_weights())
 
@@ -743,12 +746,6 @@ class GHSOM():
 
 
 # Testing Section #############################################################
-raw_data = np.random.randint(0, 255, (1000, 3))
-data = raw_data
-col_maxes = raw_data.max(axis=0)
-input_dataset = raw_data / col_maxes[np.newaxis, :]
-
-
 # neuron_creator = Neuron_Creator(hierarchical_growing_coefficient,
 #                                 "qe")
 # zero_layer = neuron_creator.zero_neuron(input_dataset)
@@ -818,14 +815,21 @@ def plot_child(e, gmap):
         if neuron.child_map is not None:
             plot_data(neuron.child_map)
         else:
-            print("Child map is none: {}".format(neuron.child_map))
-
+            pass
+            # print("Child map is none: {}".format(neuron.child_map))
+            
 
 
 from timeit import default_timer as timer
 
-map_growing_coefficient = 0.01
-hierarchical_growing_coefficient = 0.001
+raw_data = np.random.randint(0, 255, (100, 3))
+data = raw_data
+col_maxes = raw_data.max(axis=0)
+input_dataset = raw_data / col_maxes[np.newaxis, :]
+
+
+map_growing_coefficient = 0.001
+hierarchical_growing_coefficient = 0.0001
 initial_learning_rate = 0.15
 initial_neighbor_radius = 1.5
 growing_metric = "qe"
@@ -839,7 +843,7 @@ ghsom = GHSOM(input_dataset,
 
 start1 = timer()
 zero_neuron = ghsom.train(15,
-                          0.5,
+                          0.50,
                           30,
                           None,
                           10)
