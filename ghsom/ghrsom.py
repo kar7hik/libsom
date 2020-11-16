@@ -179,8 +179,8 @@ class Growing_SOM():
         self.input_data_length = self.parent_dataset.shape[0]
         self.num_input_features = self.parent_dataset.shape[1]
 
-        self.map_growing_coefficient = map_growing_coefficient
 
+        self.map_growing_coefficient = map_growing_coefficient
         self.neuron_creator = neuron_creator
         self.neurons = self.create_neurons()
 
@@ -196,6 +196,12 @@ class Growing_SOM():
         self.time_constant = None
         self.epochs = None
         self.max_iter = None
+
+        self.som_training = False
+        self.rsom_training = False
+
+        # Recurrent SOM
+        self.differences = np.zeros(self.weight_map.shape)
 
     def create_neurons(self):
         rows, cols = self.initial_map_size
@@ -222,6 +228,9 @@ class Growing_SOM():
             yield self.parent_dataset[random_generator.randint(dataset_size)]
 
     def decay_neighbor_radius(self, current_iter):
+        # print("iter: {}, nr: {}, time_constant: {}".format(current_iter,
+        #                                                    self.initial_neighbor_radius,
+        #                                                    self.time_constant))
         return self.initial_neighbor_radius * \
             np.exp(-current_iter / self.time_constant)
 
@@ -237,7 +246,7 @@ class Growing_SOM():
     def calculate_influence_v2(self, w_dist, neighbor_radius):
         return np.exp(-w_dist / (2 * (neighbor_radius ** 2)))
 
-    def get_bmu(self, data):
+    def get_som_bmu(self, data):
         number_of_data = None
         distances = None
 
@@ -261,14 +270,19 @@ class Growing_SOM():
         winner_neurons = [neurons_list[idx] for idx in winner_neuron_per_data]
 
         return winner_neurons, map_data_to_neurons
-
+    
     def train(self,
               epochs,
               initial_learning_rate,
               initial_neighbor_radius,
               dataset_percentage,
               min_dataset_size,
-              max_iter):
+              max_iter,
+              som_training,
+              rsom_training,
+              num_cycle=5,
+              num_repeat=2,
+              alpha=0.7):
 
         # Initializing parameters:
         self.initial_learning_rate = initial_learning_rate
@@ -276,16 +290,38 @@ class Growing_SOM():
         self.epochs = epochs
         self.max_iter = max_iter
 
+        self.num_cycle = num_cycle
+        self.num_repeat = num_repeat
+        self.alpha = alpha
         self.time_constant = self.epochs / np.log(self.initial_neighbor_radius)
 
+        self.som_training = som_training
+        self.rsom_training = rsom_training
+        self.differences = np.zeros(self.weight_map.shape)
+
+        # print("lr: {}, nr: {}, ep: {}, alpha: {}, time: {}".format(self.initial_learning_rate,
+        #                                                            self.initial_neighbor_radius,
+        #                                                            self.epochs,
+        #                                                            self.alpha,
+        #                                                            self.time_constant))
         iteration = 0
         can_grow = True
         while can_grow and (iteration < max_iter):
-            self.neuron_training(epochs,
-                                 initial_learning_rate,
-                                 initial_neighbor_radius,
-                                 dataset_percentage,
-                                 min_dataset_size,)
+            if self.som_training:
+                # print("SOM training")
+                self.som_neuron_training(epochs,
+                                         initial_learning_rate,
+                                         initial_neighbor_radius,
+                                         dataset_percentage,
+                                         min_dataset_size,)
+            elif self.rsom_training:
+                # print("R-SOM training")
+                self.rsom_neuron_training(epochs,
+                                          initial_learning_rate,
+                                          initial_neighbor_radius,
+                                          num_cycle,
+                                          num_repeat,
+                                          alpha)
             iteration += 1
             can_grow = self.allowed_to_grow()
             if can_grow:
@@ -296,7 +332,7 @@ class Growing_SOM():
 
         return self
 
-    def neuron_training(self,
+    def som_neuron_training(self,
                         epochs,
                         initial_learning_rate,
                         initial_neighbor_radius,
@@ -322,7 +358,7 @@ class Growing_SOM():
         return shape[0], shape[1]
 
     def som_update_v1(self, data, learning_rate, sigma):
-        gauss_kernel = self.gaussian_kernel(self.get_bmu(data)[0][0],
+        gauss_kernel = self.gaussian_kernel(self.get_som_bmu(data)[0][0],
                                             sigma)
         for neuron in self.neurons.values():
             weight = neuron.weight_vector
@@ -345,7 +381,7 @@ class Growing_SOM():
         return gaussian_kernel
 
     def som_update(self, datapoint, learning_rate, neighbor_radius):
-        winner_neuron, data_to_neuron = self.get_bmu(datapoint)
+        winner_neuron, data_to_neuron = self.get_som_bmu(datapoint)
 
         # winner neuron is in a list. \
         # To obtain the winner neuron -> winner_neuron[0]
@@ -389,6 +425,104 @@ class Growing_SOM():
                 (datapoint - weight)
             self.weight_map[neuron.get_location()] = weight
 
+    def find_difference_vector(self, datapoint, alpha):
+        """
+        Parameters:
+        y_t: Y at time t
+        x_t: X at time t
+        w_t: weight value at t
+        alpha: Weighting factor determining the effect of
+            the difference vector
+        """
+        # print(self.differences)
+        first = ((1 - alpha) * self.differences)
+        second = (alpha * (datapoint - self.weight_map))
+        y_t = first + second
+        # print(y_t)
+        return y_t
+
+    def get_rsom_bmu(self, datapoint, alpha):
+        self.differences = self.find_difference_vector(datapoint, alpha)
+        a = np.linalg.norm(self.differences, axis=2)
+        return np.argwhere(a == np.min(a))[0]
+
+    def rsom_update(self, datapoint, learning_rate, neighbor_radius, alpha):
+        
+        winner_neuron_index = self.get_rsom_bmu(datapoint, alpha)
+        # print(winner_neuron_index)
+        nrows, ncols = self.current_map_shape
+
+        self.node_list = np.array(list(
+            itertools.product(range(self.weight_map.shape[0]),
+                              range(self.weight_map.shape[1]))),
+                                  dtype=int)
+        w_dist = np.linalg.norm(self.node_list - winner_neuron_index,
+                                axis=1)
+
+        neighbor_influence = self.calculate_influence(w_dist,
+                                                      neighbor_radius).reshape(
+                                                          nrows,
+                                                          ncols,
+                                                          1)
+        self.modify_weight_matrix(learning_rate,
+                                  neighbor_influence,
+                                  datapoint)
+
+    def rsom_neuron_training(self,
+                             epochs,
+                             initial_learning_rate,
+                             initial_neighbor_radius,
+                             num_cycle,
+                             num_repeat,
+                             alpha):
+        self.initial_learning_rate = initial_learning_rate
+        self.initial_neighbor_radius = initial_neighbor_radius
+        self.epochs = epochs
+        self.alpha = alpha
+        self.differences = np.zeros(self.weight_map.shape)
+        
+        lr = self.initial_learning_rate
+        nr = self.initial_neighbor_radius
+        
+        for iteration in range(epochs):
+            random_index = np.random.randint(low=0,
+                                             high=self.input_data_length)
+            cycle_index = []
+            for j in range(num_cycle + 1):
+                cycle_index.append(random_index - j)
+
+            cycle_index.reverse()
+            cycle_index = [index for index in cycle_index if index >= 0]
+
+            for k in cycle_index:
+                for repeat in range(num_repeat):
+                    self.rsom_update(self.parent_dataset[k],
+                                     lr,
+                                     nr,
+                                     self.alpha)
+
+            self.reset()
+            lr = self.decay_learning_rate(iteration)
+            nr = self.decay_neighbor_radius(iteration)
+
+    def reset(self):
+        self.differences = np.zeros(self.weight_map.shape)
+
+    def train_recurrent_som_sequential_data(self):
+        # for i in tqdm(range(self.num_iteration)):
+        for i in range(self.num_iteration):
+            index = i % self.input_len
+            cycle_index = []
+            for j in range(self.num_cycle + 1):
+                cycle_index.append(index - j)
+
+            cycle_index.reverse()
+            cycle_index = [x for x in cycle_index if x >= 0]
+            for k in cycle_index:
+                for repeat in range(self.num_repeat):
+                    self.rsom_update(i, self.input_data[k])
+            self.reset()
+
     def allowed_to_grow(self):
         self.map_data_to_neurons()
 
@@ -415,7 +549,7 @@ class Growing_SOM():
         for neuron in self.neurons.values():
             neuron.clear_dataset()
 
-        _, data_to_neuron = self.get_bmu(self.parent_dataset)
+        _, data_to_neuron = self.get_som_bmu(self.parent_dataset)
         neurons = list(self.neurons.values())
         for idx, data_idxs in enumerate(data_to_neuron):
             neurons[idx].replace_dataset(self.parent_dataset[data_idxs, :])
@@ -597,6 +731,29 @@ class Growing_SOM():
         return abs(first_neuron_col_value - second_neuron_col_value) == 0
 
 
+class Growing_RSOM(Growing_SOM):
+    def __init__(self,
+                 initial_map_size,
+                 map_growing_coefficient,
+                 weight_map,
+                 parent_dataset,
+                 parent_quantization_error,
+                 neuron_creator):
+        """Constructor for Growing_SOM Class."""
+        Growing_SOM.__init__(self,
+                             initial_map_size=initial_map_size,
+                             map_growing_coefficient=map_growing_coefficient,
+                             weight_map=weight_map,
+                             parent_dataset=parent_dataset,
+                             parent_quantization_error=parent_quantization_error,
+                             neuron_creator=neuron_creator)
+
+        # Recurrent SOM
+        self.differences = np.zeros(self.weight_map.shape)
+        self.alpha = 0.7
+        self.num_cycle = 5
+        self.num_repeat = 2
+        
 class GHSOM():
     def __init__(self,
                  input_dataset,
@@ -617,6 +774,20 @@ class GHSOM():
         self.growing_metric = growing_metric
         self.neuron_creator = Neuron_Creator(self.hierarchical_growing_coefficient,
                                              self.growing_metric)
+
+        self.dataset_percentage = 0.5
+        self.min_dataset_size = 20
+        self.max_iter = 100
+
+        self.som_training = False
+        self.rsom_training = False
+        self.alpha = 0.7
+
+        self.epochs = 10
+        self.num_cycle = 5
+        self.num_repeat = 2
+
+
 
     def calc_initial_random_weights(self):
         random_generator = np.random.RandomState(None)
@@ -650,12 +821,46 @@ class GHSOM():
 
         return zero_neuron
 
-    def train(self,
-              epochs=15,
-              dataset_percentage=0.25,
-              min_dataset_size=20,
-              seed=None,
-              max_iter=100):
+    def som_train(self,
+                  epochs=15,
+                  dataset_percentage=0.50,
+                  min_dataset_size=20,
+                  max_iter=100):
+        self.epochs = epochs
+        self.dataset_percentage = dataset_percentage
+        self.min_dataset_size = min_dataset_size
+        self.max_iter = max_iter
+        
+        self.som_training = True
+        self.rsom_training = False
+
+        zero_neuron = self.train()
+
+        return zero_neuron
+    
+    def rsom_train(self,
+                   epochs=15,
+                   num_cycle=5,
+                   num_repeat=3,
+                   alpha=0.7):
+        self.rsom_training = True
+        self.som_training = False
+
+        self.epochs = epochs
+        self.num_cycle = num_cycle
+        self.num_repeat = num_repeat
+        self.alpha = alpha
+
+        # print("lr: {}, nr: {}, ep: {}, alpha: {}".format(self.initial_learning_rate,
+        #                                                  self.initial_neighbor_radius,
+        #                                                  self.epochs,
+        #                                                  self.alpha))
+        
+        zero_neuron = self.train()
+
+        return zero_neuron
+
+    def train(self):
 
         zero_neuron = self.create_zero_neuron()
 
@@ -669,13 +874,20 @@ class GHSOM():
 
             for i in range(size):
                 neuron = neurons_to_train_queue.get()
+
                 growing_maps[neuron] = (pool.apply_async(neuron.child_map.train,
-                                                         (epochs,
+                                                         (self.epochs,
                                                           self.initial_learning_rate,
                                                           self.initial_neighbor_radius,
-                                                          dataset_percentage,
-                                                          min_dataset_size,
-                                                          max_iter)))
+                                                          self.dataset_percentage,
+                                                          self.min_dataset_size,
+                                                          self.max_iter,
+                                                          self.som_training,
+                                                          self.rsom_training,
+                                                          self.num_cycle,
+                                                          self.num_repeat,
+                                                          self.alpha)))
+                    
             for neuron in growing_maps:
                 growing_map = growing_maps[neuron].get()
                 neuron.child_map = growing_map
@@ -736,6 +948,8 @@ class GHSOM():
         map_rows, map_cols = map_shape
         return (row >= 0 and col >= 0) and \
             (row < map_rows and col < map_cols)
+
+
 
 
 # Testing Section #############################################################
@@ -819,28 +1033,26 @@ input_dataset = raw_data / col_maxes[np.newaxis, :]
 
 
 map_growing_coefficient = 0.001
-hierarchical_growing_coefficient = 0.0001
+hierarchical_growing_coefficient = 0.001
 initial_learning_rate = 0.15
 initial_neighbor_radius = 1.5
 growing_metric = "qe"
 
 ghsom = GHSOM(input_dataset,
-              map_growing_coefficient,
-              hierarchical_growing_coefficient,
-              initial_learning_rate,
-              initial_neighbor_radius,
-              growing_metric)
+             map_growing_coefficient,
+             hierarchical_growing_coefficient,
+             initial_learning_rate,
+             initial_neighbor_radius,
+             growing_metric)
+
+
 
 start1 = timer()
-zero_neuron = ghsom.train(15,
-                          0.50,
-                          30,
-                          None,
-                          10)
+# zero_neuron = ghsom.rsom_train()
+zero_neuron = ghsom.som_train()
 
 end1 = timer()
 print(end1 - start1)
-
 
 plot_data(zero_neuron.child_map)
 
