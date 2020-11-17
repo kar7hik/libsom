@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import patches as patches
-from ghsom import cog_arch
+from ghsom import self_organizing
 from timeit import default_timer as timer
 
 
@@ -13,13 +13,13 @@ col_maxes = raw_data.max(axis=0)
 data = raw_data / col_maxes[np.newaxis, :]
 num_iteration = 15
 
-s = cog_arch.SOM(nrows=rows,
+s = self_organizing.SOM(nrows=rows,
                  ncols=cols,
                  input_data=data,
                  num_iteration=num_iteration,
                  init_radius=1.5)
 
-ss = cog_arch.SOM(nrows=rows,
+ss = self_organizing.SOM(nrows=rows,
                   ncols=cols,
                   input_data=data,
                   num_iteration=num_iteration,

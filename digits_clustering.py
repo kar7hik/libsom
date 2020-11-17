@@ -1,7 +1,7 @@
 from sklearn.datasets import load_digits
 from matplotlib import pyplot as plt
 import matplotlib
-import ghsom
+from ghsom import *
 import numpy as np
 
 
@@ -25,7 +25,7 @@ def __gmap_to_matrix(gmap):
 def interactive_plot(gmap):
     # _num = "level {} -- parent pos {}".format(level, num)
     fig, ax = plt.subplots()
-    ax.imshow(__gmap_to_matrix(gmap.current_som_map),
+    ax.imshow(__gmap_to_matrix(gmap.weight_map),
               cmap='bone_r',
               interpolation='sinc')
     fig.canvas.mpl_connect('button_press_event',
@@ -46,12 +46,39 @@ def __plot_child(e, gmap):
 digits = load_digits()
 data = digits.data
 
-tau_1 = 0.1
-tau_2 = 0.001
-learning_rate = 0.95
-growing_metric = "qe"
 
-gh = ghsom.GHSOM(data, tau_1, tau_2, learning_rate, growing_metric)
-zero_unit = gh.train(50)
-gmap = zero_unit.child_map.current_som_map
-interactive_plot(zero_unit.child_map)
+# Input parameters: ###########################################################
+map_growing_coefficient = 0.1
+hierarchical_growing_coefficient = 0.0001
+initial_learning_rate = 0.15
+initial_neighbor_radius = 1.5
+growing_metric = "qe"
+epochs = 15
+dataset_percentage = 0.5
+min_dataset_size = 30
+max_iter = 10
+num_cycle = 5
+num_repeat = 2
+alpha = 0.7
+
+# ghsom = GHSOM(data,
+#               map_growing_coefficient,
+#               hierarchical_growing_coefficient,
+#               initial_learning_rate,
+#               initial_neighbor_radius,
+#               growing_metric)
+
+# zero_neuron = ghsom.ghsom_train()
+
+
+ghrsom = GHRSOM(data,
+                map_growing_coefficient,
+                hierarchical_growing_coefficient,
+                initial_learning_rate,
+                initial_neighbor_radius,
+                growing_metric)
+
+zero_neuron_1 = ghrsom.ghrsom_train()
+
+gmap = zero_neuron_1.child_map.weight_map
+interactive_plot(zero_neuron_1.child_map)
