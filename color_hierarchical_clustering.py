@@ -89,60 +89,60 @@ ghrsom = GHRSOM(input_dataset,
 # end = timer()
 # print(end - start)
 
-# start1 = timer()
-# zero_neuron_1 = ghrsom.ghrsom_train()
-# end1 = timer()
-# print(end1 - start1)
+start1 = timer()
+zero_neuron_1 = ghrsom.ghrsom_train()
+end1 = timer()
+print(end1 - start1)
 
 
 # plot_data(zero_neuron.child_map)
-# plot_data(zero_neuron_1.child_map)
+plot_data(zero_neuron_1.child_map)
 
-# plt.show()
+plt.show()
 
 
 
 
 
 # For Single layer test: ######################################################
-neuron_creator = Neuron_Creator(hierarchical_growing_coefficient,
-                                "qe")
-zero_layer = neuron_creator.zero_neuron(input_dataset)
-zero_layer.activation(input_dataset)
-weight_map = np.random.uniform(size=(2, 2, input_dataset.shape[1]))
-er = zero_layer.compute_quantization_error()
+# neuron_creator = Neuron_Creator(hierarchical_growing_coefficient,
+#                                 "qe")
+# zero_layer = neuron_creator.zero_neuron(input_dataset)
+# zero_layer.activation(input_dataset)
+# weight_map = np.random.uniform(size=(2, 2, input_dataset.shape[1]))
+# er = zero_layer.compute_quantization_error()
 
 
-first_layer = Growing_SOM((2, 2),
-                            0.001,
-                            weight_map,
-                            input_dataset,
-                            er,
-                            neuron_creator)
+# first_layer = Growing_SOM((2, 2),
+#                             0.001,
+#                             weight_map,
+#                             input_dataset,
+#                             er,
+#                             neuron_creator)
 
-first_layer_1 = Growing_RSOM((2, 2),
-                             0.001,
-                             weight_map,
-                             input_dataset,
-                             er,
-                             neuron_creator)
+# first_layer_1 = Growing_RSOM((2, 2),
+#                              0.001,
+#                              weight_map,
+#                              input_dataset,
+#                              er,
+#                              neuron_creator)
 
-def plot_data(current_som_map):
-    rows = current_som_map.shape[0]
-    cols = current_som_map.shape[1]
-    som_map = current_som_map
+# def plot_data(current_som_map):
+#     rows = current_som_map.shape[0]
+#     cols = current_som_map.shape[1]
+#     som_map = current_som_map
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, aspect='equal')
-    ax.set_xlim((0, rows + 1))
-    ax.set_ylim((0, cols + 1))
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111, aspect='equal')
+#     ax.set_xlim((0, rows + 1))
+#     ax.set_ylim((0, cols + 1))
 
-    for x in range(1, rows + 1):
-        for y in range(1, cols + 1):
-            ax.add_patch(patches.Rectangle((x-0.5, y-0.5), 1, 1,
-                                           facecolor=som_map[x-1, y-1, :],
-                                           edgecolor='none'))
-    plt.show()
+#     for x in range(1, rows + 1):
+#         for y in range(1, cols + 1):
+#             ax.add_patch(patches.Rectangle((x-0.5, y-0.5), 1, 1,
+#                                            facecolor=som_map[x-1, y-1, :],
+#                                            edgecolor='none'))
+#     plt.show()
 
 # first_layer.gsom_train(epochs,
 #                        initial_learning_rate,
@@ -150,6 +150,7 @@ def plot_data(current_som_map):
 #                        dataset_percentage,
 #                        min_dataset_size,
 #                        max_iter)
+
 # first_layer_1.grsom_train(epochs,
 #                           initial_learning_rate,
 #                           initial_neighbor_radius,
