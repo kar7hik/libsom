@@ -161,7 +161,57 @@ class Neuron_Creator():
         return input_dataset.mean(axis=0)
 
 
-class Growing_SOM():
+class SOM(Neuron):
+    def __init__(self,
+                 nrows,
+                 ncols,
+                 input_data,
+                 time_constant,
+                 initial_learning_rate=0.9,
+                 initial_neighbor_radius=1.5,
+                 epochs=15 ):
+        self.nrows = nrows
+        self.ncols = ncols
+        self.input_data = input_data
+        self.initial_learning_rate = initial_learning_rate
+        self.initial_neighbor_radius = initial_neighbor_radius
+        self.time_constant = time_constant
+        self.epochs = epochs
+
+        # Input data parameters
+        self.input_len = self.input_data.shape[0]
+        self.num_input_features = self.input_data.shape[1]
+
+        self.som_map = None
+        self.neuron_list = np.array(list(
+            itertools.product(range(self.nrows), range(self.ncols))),
+                                    dtype=int)
+
+    def create_neurons(self, map_size):
+        neurons = ss
+        #ToDo
+        
+
+    def decay_neighbor_radius(self, current_iter):
+        return self.initial_neighbor_radius * \
+            np.exp(-current_iter / self.time_constant)
+
+    def decay_learning_rate(self, current_iter):
+        return self.initial_learning_rate * \
+            np.exp(-current_iter / self.epochs)
+
+    def calculate_influence(self, w_dist, neighbor_radius):
+        pseudogaussian = np.exp(-np.divide(np.power(w_dist, 2),
+                                           (2 * np.power(neighbor_radius, 2))))
+        return pseudogaussian
+
+    def get_bmu(self, datapoint):
+        a = np.linalg.norm(self.som_map - datapoint, axis=2)
+        return np.argwhere(a == np.min(a))[0]
+        
+    
+
+class Growing_SOM(SOM):
     def __init__(self,
                  initial_map_size,
                  map_growing_coefficient,
