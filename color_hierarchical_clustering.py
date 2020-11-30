@@ -67,36 +67,36 @@ alpha = 0.7
 
 
 # GHSOM Initialization: ########################################################
-ghsom = GHSOM(input_dataset,
-              map_growing_coefficient,
-              hierarchical_growing_coefficient,
-              initial_learning_rate,
-              initial_neighbor_radius,
-              growing_metric)
+ghsom = ghrsom.GHSOM(input_dataset,
+                     map_growing_coefficient,
+                     hierarchical_growing_coefficient,
+                     initial_learning_rate,
+                     initial_neighbor_radius,
+                     growing_metric)
 
 # GHRSOM Initialization: ########################################################
-ghrsom = GHRSOM(input_dataset,
-                map_growing_coefficient,
-                hierarchical_growing_coefficient,
-                initial_learning_rate,
-                initial_neighbor_radius,
-                growing_metric)
-
+# ghrsom = GHRSOM(input_dataset,
+#                 map_growing_coefficient,
+#                 hierarchical_growing_coefficient,
+#                 initial_learning_rate,
+#                 initial_neighbor_radius,
+#                 growing_metric)
+ 
 
 # Training: ###################################################################
-# start = timer()
-# zero_neuron = ghsom.ghsom_train()
-# end = timer()
-# print(end - start)
+start = timer()
+zero_neuron = ghsom.ghsom_train()
+end = timer()
+print(end - start)
 
-start1 = timer()
-zero_neuron_1 = ghrsom.ghrsom_train()
-end1 = timer()
-print(end1 - start1)
+# start1 = timer()
+# zero_neuron_1 = ghrsom.ghrsom_train()
+# end1 = timer()
+# print(end1 - start1)
 
 
-# plot_data(zero_neuron.child_map)
-plot_data(zero_neuron_1.child_map)
+plot_data(zero_neuron.child_map)
+# plot_data(zero_neuron_1.child_map)
 
 plt.show()
 
