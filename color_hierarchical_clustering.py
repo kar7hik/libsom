@@ -66,7 +66,7 @@ num_repeat = 2
 alpha = 0.7
 
 num_iteration = 100
-training_type = "normal"
+training_type = "batch"
 
 if training_type == "normal":
     epochs = num_iteration
@@ -74,13 +74,13 @@ if training_type == "normal":
 
 
 # GHSOM Initialization: ########################################################
-# ghsom = ghrsom.GHSOM(input_dataset,
-#                      map_growing_coefficient,
-#                      hierarchical_growing_coefficient,
-#                      initial_learning_rate,
-#                      initial_neighbor_radius,
-#                      growing_metric,
-#                      training_type)
+ghsom = ghrsom.GHSOM(input_dataset,
+                     map_growing_coefficient,
+                     hierarchical_growing_coefficient,
+                     initial_learning_rate,
+                     initial_neighbor_radius,
+                     growing_metric,
+                     training_type)
 
 # GHRSOM Initialization: ########################################################
 ghrsom = ghrsom.GHRSOM(input_dataset,
@@ -93,26 +93,26 @@ ghrsom = ghrsom.GHRSOM(input_dataset,
  
 
 # Training: ###################################################################
-# start = timer()
-# zero_neuron = ghsom.ghsom_train(epochs,
-#                                 dataset_percentage,
-#                                 min_dataset_size,
-#                                 max_iter)
-# end = timer()
-# print(end - start)
+start = timer()
+zero_neuron = ghsom.ghsom_train(epochs,
+                                dataset_percentage,
+                                min_dataset_size,
+                                max_iter)
+end = timer()
+print(end - start)
 
-start1 = timer()
-zero_neuron_1 = ghrsom.ghrsom_train(epochs,
-                                    num_cycle,
-                                    num_repeat,
-                                    alpha,
-                                    max_iter)
-end1 = timer()
-print(end1 - start1)
+# start1 = timer()
+# zero_neuron_1 = ghrsom.ghrsom_train(epochs,
+#                                     num_cycle,
+#                                     num_repeat,
+#                                     alpha,
+#                                     max_iter)
+# end1 = timer()
+# print(end1 - start1)
 
 
-# plot_data(zero_neuron.child_map)
-plot_data(zero_neuron_1.child_map)
+plot_data(zero_neuron.child_map)
+# plot_data(zero_neuron_1.child_map)
 
 plt.show()
 

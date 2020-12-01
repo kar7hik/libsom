@@ -194,7 +194,8 @@ class SOM():
             self.som_map = None
 
         self.neuron_list = np.array(list(
-            itertools.product(range(self.nrows), range(self.ncols))),
+            itertools.product(range(self.nrows),
+                              range(self.ncols))),
                                     dtype=int)
 
     def create_batch_data(self,
@@ -447,7 +448,7 @@ class RSOM(SOM):
                                      nr)
 
             self.reset()
-            print("learning_rate: {}, neighbor_radius: {}".format(lr, nr))
+            # print("learning_rate: {}, neighbor_radius: {}".format(lr, nr))
             lr, nr = self.find_learning_parameters(iteration,
                                                    self.input_data[random_index],
                                                    lr,
@@ -472,7 +473,7 @@ class PLSOM(SOM):
                      epochs,
                      initialization=initialization)
 
-        self.scaling_variable = (self.find_euclidean_distance(self.input_data[0]) ** 2)
+        self.scaling_variable = self.find_euclidean_distance(self.input_data[0])
 
     def find_euclidean_distance(self, datapoint):
         return np.linalg.norm(self.som_map - datapoint, axis=2)
@@ -481,7 +482,7 @@ class PLSOM(SOM):
         euclidean_distance = self.find_euclidean_distance(datapoint)
         self.scaling_variable = max(euclidean_distance, self.scaling_variable)
         
-        normalized_euclidean_distance = (euclidean_distance ** 2) / self.scaling_variable
+        normalized_euclidean_distance = euclidean_distance / self.scaling_variable
 
         return normalized_euclidean_distance
 
@@ -529,10 +530,6 @@ class Growing_SOM(SOM):
 
         self.current_map_shape = self.initial_map_size
         self.nrows, self.ncols = self.initial_map_size
-
-        self.node_list = np.array(list(
-            itertools.product(range(self.nrows), range(self.ncols))),
-                                   dtype=int)
 
         self.initial_learning_rate = None
         self.initial_neighbor_radius = None
