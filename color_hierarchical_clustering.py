@@ -1,4 +1,4 @@
-from ghrsom import *
+import ghrsom
 import matplotlib.pyplot as plt
 from matplotlib import patches as patches
 import numpy as np
@@ -54,7 +54,7 @@ input_dataset = raw_data / col_maxes[np.newaxis, :]
 # Input parameters: ###########################################################
 map_growing_coefficient = 0.01
 hierarchical_growing_coefficient = 0.001
-initial_learning_rate = 0.15
+initial_learning_rate = 0.25
 initial_neighbor_radius = 1.5
 growing_metric = "qe"
 epochs = 20
@@ -65,38 +65,54 @@ num_cycle = 5
 num_repeat = 2
 alpha = 0.7
 
+num_iteration = 100
+training_type = "normal"
+
+if training_type == "normal":
+    epochs = num_iteration
+
+
 
 # GHSOM Initialization: ########################################################
-ghsom = ghrsom.GHSOM(input_dataset,
-                     map_growing_coefficient,
-                     hierarchical_growing_coefficient,
-                     initial_learning_rate,
-                     initial_neighbor_radius,
-                     growing_metric)
+# ghsom = ghrsom.GHSOM(input_dataset,
+#                      map_growing_coefficient,
+#                      hierarchical_growing_coefficient,
+#                      initial_learning_rate,
+#                      initial_neighbor_radius,
+#                      growing_metric,
+#                      training_type)
 
 # GHRSOM Initialization: ########################################################
-# ghrsom = GHRSOM(input_dataset,
-#                 map_growing_coefficient,
-#                 hierarchical_growing_coefficient,
-#                 initial_learning_rate,
-#                 initial_neighbor_radius,
-#                 growing_metric)
+ghrsom = ghrsom.GHRSOM(input_dataset,
+                       map_growing_coefficient,
+                       hierarchical_growing_coefficient,
+                       initial_learning_rate,
+                       initial_neighbor_radius,
+                       growing_metric,
+                       training_type)
  
 
 # Training: ###################################################################
-start = timer()
-zero_neuron = ghsom.ghsom_train()
-end = timer()
-print(end - start)
+# start = timer()
+# zero_neuron = ghsom.ghsom_train(epochs,
+#                                 dataset_percentage,
+#                                 min_dataset_size,
+#                                 max_iter)
+# end = timer()
+# print(end - start)
 
-# start1 = timer()
-# zero_neuron_1 = ghrsom.ghrsom_train()
-# end1 = timer()
-# print(end1 - start1)
+start1 = timer()
+zero_neuron_1 = ghrsom.ghrsom_train(epochs,
+                                    num_cycle,
+                                    num_repeat,
+                                    alpha,
+                                    max_iter)
+end1 = timer()
+print(end1 - start1)
 
 
-plot_data(zero_neuron.child_map)
-# plot_data(zero_neuron_1.child_map)
+# plot_data(zero_neuron.child_map)
+plot_data(zero_neuron_1.child_map)
 
 plt.show()
 
