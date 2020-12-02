@@ -473,20 +473,34 @@ class PLSOM(SOM):
                      epochs,
                      initialization=initialization)
 
-        self.scaling_variable = self.find_euclidean_distance(self.input_data[0])
+        self.scaling_variable = None
 
     def find_euclidean_distance(self, datapoint):
-        return np.linalg.norm(self.som_map - datapoint, axis=2)
+        winner_neuron_index = self.get_bmu(datapoint)
+        winner_neuron_weight = self.som_map[winner_neuron_index]
+
+        euclidean_distance = np.linalg.norm(datapoint - winner_neuron_weight)
+        return euclidean_distance
 
     def find_best_fit_learning_rate(self, datapoint):
         euclidean_distance = self.find_euclidean_distance(datapoint)
+        print("Euclidean distance: {}, prev scale: {}".format(
+            euclidean_distance,
+            self.scaling_variable))
         self.scaling_variable = max(euclidean_distance, self.scaling_variable)
-        
+
+        print("Euclidean distance: {}, curr scale: {}".format(
+            euclidean_distance,
+            self.scaling_variable))
+
         normalized_euclidean_distance = euclidean_distance / self.scaling_variable
 
+        print("Normalized ED: {}".format(normalized_euclidean_distance))
         return normalized_euclidean_distance
 
-    def find_best_fit_neighbor_radius(self, bmu_index):
+    def find_best_fit_neighbor_radius(self, neighbor_radius):
+        beta = neighbor_radius
+        
         pass
         
     def find_learning_parameters(self,
@@ -494,8 +508,12 @@ class PLSOM(SOM):
                                  datapoint,
                                  learning_rate,
                                  neighbor_radius):
+        if (epoch == 0):
+            self.scaling_variable = self.find_euclidean_distance(datapoint)
         learning_rate = self.find_best_fit_learning_rate(datapoint)
         neighbor_radius = self.find_best_fit_neighbor_radius(datapoint)
+
+        return learning_rate, neighbor_radius
 
         
 
