@@ -18,7 +18,7 @@ alpha = 0.7
 num_cycle = 5
 num_repeat = 2
 epochs = 20
-num_iteration = 500
+num_iteration = 1000
 
 
 dataset_percentage = 0.50
