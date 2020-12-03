@@ -27,26 +27,31 @@ seed = None
 
 wg = np.random.random((rows, cols, data.shape[1]))
 
-som_normal = ghrsom.SOM(rows,
-                        cols,
-                        data,
-                        initial_learning_rate,
-                        initial_neighbor_radius,
-                        num_iteration)
+# som_normal = ghrsom.SOM(rows,
+#                         cols,
+#                         data,
+#                         initial_learning_rate,
+#                         initial_neighbor_radius,
+#                         num_iteration)
 
-som_batch = ghrsom.SOM(rows,
-                       cols,
-                       data,
-                       initial_learning_rate,
-                       initial_neighbor_radius,
-                       epochs)
+# som_batch = ghrsom.SOM(rows,
+#                        cols,
+#                        data,
+#                        initial_learning_rate,
+#                        initial_neighbor_radius,
+#                        epochs)
 
-rsom_normal = ghrsom.RSOM(rows,
-                          cols,
-                          data,
-                          initial_learning_rate,
-                          initial_neighbor_radius,
-                          num_iteration)
+# rsom_normal = ghrsom.RSOM(rows,
+#                           cols,
+#                           data,
+#                           initial_learning_rate,
+#                           initial_neighbor_radius,
+#                           num_iteration)
+
+plsom_normal = ghrsom.PLSOM(rows,
+                            cols,
+                            data,
+                            epochs=num_iteration)
 
 
 def plot_data(som_map, rows, cols):
@@ -80,10 +85,15 @@ def plot_data(som_map, rows, cols):
 # plot_data(som_batch.som_map, rows, cols)
 
 
-rsom_normal.som_map = wg
-rsom_normal.rsom_training(num_iteration,
-                          5,
-                          2,
-                          0.7)
-plot_data(rsom_normal.som_map, rows, cols)
+# rsom_normal.som_map = wg
+# rsom_normal.rsom_training(num_iteration,
+#                           5,
+#                           2,
+#                           0.7)
+# plot_data(rsom_normal.som_map, rows, cols)
+
+
+plsom_normal.plsom_train()
+plot_data(plsom_normal.som_map, rows, cols)
+
 
