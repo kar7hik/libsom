@@ -51,7 +51,7 @@ wg = np.random.random((rows, cols, data.shape[1]))
 plsom_normal = ghrsom.PLSOM(rows,
                             cols,
                             data,
-                            epochs=num_iteration)
+                            epochs=epochs)
 
 
 def plot_data(som_map, rows, cols):
@@ -78,8 +78,9 @@ def plot_data(som_map, rows, cols):
 
 
 # som_batch.som_map = wg
+# wg = som_batch.som_map
 # start2 = timer()
-# som_batch.som_batch_training(dataset_percentage, min_size)
+# som_batch.som_batch_train(dataset_percentage, min_size)
 # end2 = timer()
 # print(end2 - start2) # Time in seconds, e.g. 5.38091952400282
 # plot_data(som_batch.som_map, rows, cols)
@@ -93,7 +94,8 @@ def plot_data(som_map, rows, cols):
 # plot_data(rsom_normal.som_map, rows, cols)
 
 
-plsom_normal.plsom_train()
+# plsom_normal.som_map = wg
+plsom_normal.plsom_batch_train(dataset_percentage, min_size)
 plot_data(plsom_normal.som_map, rows, cols)
 
 

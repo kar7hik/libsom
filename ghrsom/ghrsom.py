@@ -231,8 +231,11 @@ class SOM():
 
 
     def get_bmu(self, datapoint):
+        # print(self.som_map)
         a = np.linalg.norm(self.som_map - datapoint, axis=2)
+        # print(a)
         bmu_index = np.argwhere(a == np.min(a))[0]
+        # print("BMU Index: {}".format(bmu_index))
         # bmu = self.som_map[bmu_index]
         return tuple(bmu_index)
 
@@ -453,7 +456,7 @@ class RSOM(SOM):
                                                    lr,
                                                    nr)
 
-
+# input_dataset = np.random.random((100, 3))
 class PLSOM(SOM):
     def __init__(self,
                  nrows,
@@ -472,37 +475,61 @@ class PLSOM(SOM):
                      initial_neighbor_radius,
                      epochs,
                      initialization=initialization)
-
         self.scaling_variable = None
-
+                
         # Constant initial value for beta.
         self.beta = beta if beta else 2
         self.theta = 1
 
-        self.best_fit_neighbor_radius = None
         self.best_fit_learning_rate = None
+        self.best_fit_neighbor_radius = None
+        self.neighbor_influence = None
+
+        self.curr_bmu_index = None
+        self.curr_bmu_weight = None
+
+        self.winner_euclidean_distance = None
+
+        self.counter = 0
 
     def find_winner_euclidean_distance(self, datapoint):
         self.curr_bmu_index = self.get_bmu(datapoint)
         self.curr_bmu_weight = self.som_map[self.curr_bmu_index]
-
         return np.linalg.norm(datapoint - self.curr_bmu_weight)
+        
+        
+    def initialize_scaling_variable(self, datapoint):
+        return self.find_winner_euclidean_distance(datapoint)
+
+    def find_scaling_variable(self, winner_euclidean_distance):
+        a = max(winner_euclidean_distance, self.scaling_variable)
+        # print(winner_euclidean_distance, self.scaling_variable)
+        return a
 
     def find_best_fit_learning_rate(self, datapoint):
-        winner_euclidean_distance = self.find_winner_euclidean_distance(datapoint)
-        self.scaling_variable = max(winner_euclidean_distance,
-                                    self.scaling_variable)
+        self.winner_euclidean_distance = self.find_winner_euclidean_distance(datapoint)
+        self.scaling_variable = self.find_scaling_variable(self.winner_euclidean_distance)
+        # if (winner_euclidean_distance == 0.0):
+        #     return 0.001
+        # print(self.winner_euclidean_distance, self.scaling_variable)
+        return self.winner_euclidean_distance / self.scaling_variable
 
-        return winner_euclidean_distance / self.scaling_variable
+    def find_best_fit_neighbor_radius(self, datapoint):
+        self.best_fit_neighbor_radius = (self.beta - self.theta) * \
+            np.log(1 + self.best_fit_learning_rate * (np.e - 1)) + self.theta
+
+        return self.best_fit_neighbor_radius    
 
     def calculate_influence(self):
         w_dist = np.linalg.norm(self.neuron_list - self.curr_bmu_index,
                                 axis=1)
-        return np.exp(-np.divide(np.power(w_dist, 2),
-                                 np.power(self.best_fit_neighbor_radius,
-                                          2))).reshape(self.nrows,
-                                                       self.ncols,
-                                                       1)
+
+        # print(self.best_fit_learning_rate, self.best_fit_neighbor_radius)
+        return np.exp(-np.divide((np.power(w_dist, 2)),
+                                 (np.power(self.best_fit_neighbor_radius,
+                                          2)))).reshape(self.nrows,
+                                                        self.ncols,
+                                                        1)
 
     def find_learning_parameters(self,
                                  epoch,
@@ -510,116 +537,19 @@ class PLSOM(SOM):
                                  learning_rate,
                                  neighbor_radius):
         if (epoch == 0):
-            self.scaling_variable = self.find_winner_euclidean_distance(datapoint)
+            self.scaling_variable = self.initialize_scaling_variable(datapoint)
 
         self.best_fit_learning_rate = self.find_best_fit_learning_rate(datapoint)
         self.best_fit_neighbor_radius = self.find_best_fit_neighbor_radius(datapoint)
-        
-        
-        
-        
-
-class PLSOM(SOM):
-    def __init__(self,
-                 nrows,
-                 ncols,
-                 input_data,
-                 initial_learning_rate=0.9,
-                 initial_neighbor_radius=1.5,
-                 epochs=15,
-                 beta=None,
-                 initialization="random"):
-        SOM.__init__(self,
-                     nrows,
-                     ncols,
-                     input_data,
-                     initial_learning_rate,
-                     initial_neighbor_radius,
-                     epochs,
-                     initialization=initialization)
-
-        self.scaling_variable = None
-
-        # Constant initial value for beta.
-        self.beta = beta if beta else 2
-        self.theta = 1
-        self.neighbor_influence = None
-
-        self.neighbor_radius = None
-
-        self.best_fit_learning_rate = None
-        self.best_fit_neighbor_radius = None
-        
-        self.curr_winner_neuron_index = None
-        self.curr_winner_neuron_weight = None
-        
-    def find_euclidean_distance(self, datapoint):
-        """
-        Find the Euclidean distance between the datapoint and the best matching unit.
-        First step is to find the BMU for the given datapoint.
-        Then the Euclidean distance is calculated for BMU weight vector and the datapoint.
-        """
-        
-        self.curr_winner_neuron_index = self.get_bmu(datapoint)
-        self.curr_winner_neuron_weight = self.som_map[self.curr_winner_neuron_index]
-
-        euclidean_distance = np.linalg.norm(datapoint - self.curr_winner_neuron_weight)
-        return euclidean_distance
-
-    def find_best_fit_neighbor_radius(self, datapoint):
-        self.neighbor_radius = (self.beta - self.theta) * \
-            np.log(1 + ((self.best_fit_learning_rate) * (np.e - 1))) + self.theta
-
-        return self.neighbor_radius
-
-
-    def find_best_fit_learning_rate(self, datapoint):
-        euclidean_distance = self.find_euclidean_distance(datapoint)
-        self.scaling_variable = max(euclidean_distance, self.scaling_variable)
-        normalized_euclidean_distance = euclidean_distance / self.scaling_variable
-
-        # print("Normalized ED: {}".format(normalized_euclidean_distance))
-        return normalized_euclidean_distance
-
-    def calculate_influence(self):
-        w_dist = np.linalg.norm(self.neuron_list - self.curr_winner_neuron_index,
-                                axis=1)
-        self.neighbor_influence = np.exp(-np.divide(np.power(w_dist, 2),
-                                                    np.power(self.neighbor_radius,
-                                                             2)))
-        
-        self.neighbor_influence = self.neighbor_influence.reshape(self.nrows,
-                                                                  self.ncols,
-                                                                  1)
-        return self.neighbor_influence
-
-    def find_learning_parameters(self,
-                                 epoch,
-                                 datapoint,
-                                 learning_rate,
-                                 neighbor_radius):
-        if (epoch == 0):
-            self.scaling_variable = self.find_euclidean_distance(datapoint)
-
-        self.best_fit_learning_rate = self.find_best_fit_learning_rate(datapoint)
-        self.neighbor_radius = self.find_best_fit_neighbor_radius(datapoint)
-        # self.best_fit_neighbor_radius = self.find_best_fit_neighbor_radius()
 
     def plsom_update(self, datapoint):
-        self.curr_winner_neuron_index = self.get_bmu(datapoint)
-
         self.neighbor_influence = self.calculate_influence()
-        
         self.som_map = self.modify_weight_matrix(self.best_fit_learning_rate,
                                                  self.neighbor_influence,
                                                  datapoint)
 
     def plsom_train(self):
-        """
-        Interface to train the PLSOM.
-        """
         epochs = self.epochs
-
         for epoch in tqdm(range(epochs)):
             random_index = np.random.randint(low=0,
                                              high=self.input_data_length)
@@ -628,29 +558,25 @@ class PLSOM(SOM):
                                           datapoint,
                                           self.best_fit_learning_rate,
                                           self.best_fit_neighbor_radius)
-            # print("learning_rate: {}".format(self.best_fit_learning_rate))
-
             self.plsom_update(datapoint)
-            # print("learning_rate: {}, neighbor_radius: {}".format(lr, nr))
 
     def plsom_batch_train(self,
                           dataset_percentage,
                           min_dataset_size):
         epochs = self.epochs
-
-        for i in tqdm(range(epochs)):
+        for epoch in tqdm(range(epochs)):
+            # print("epoch: {}".format(epoch))
             for data_index in self.create_batch_data(dataset_percentage,
                                                      min_dataset_size,
                                                      seed=None):
+                # print("epoch: {}".format(epoch))
                 data = self.input_data[data_index]
-                self.find_learning_parameters(i,
+                self.find_learning_parameters(self.counter,
                                               data,
                                               self.best_fit_learning_rate,
                                               self.best_fit_neighbor_radius)
-                # TODO: Check the results of lr and nr
                 self.plsom_update(data)
-
-
+                self.counter += 1
 
 
 class PLRSOM(RSOM):
