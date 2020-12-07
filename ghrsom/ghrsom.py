@@ -476,7 +476,7 @@ class PLSOM(SOM):
                      epochs,
                      initialization=initialization)
         self.scaling_variable = None
-                
+
         # Constant initial value for beta.
         self.beta = beta if beta else 2
         self.theta = 1
@@ -536,7 +536,9 @@ class PLSOM(SOM):
                                  datapoint,
                                  learning_rate,
                                  neighbor_radius):
-        if (epoch == 0):
+        # if (epoch == 0):
+        if (self.scaling_variable is None):
+            # print("First time")
             self.scaling_variable = self.initialize_scaling_variable(datapoint)
 
         self.best_fit_learning_rate = self.find_best_fit_learning_rate(datapoint)
@@ -579,12 +581,138 @@ class PLSOM(SOM):
                 self.counter += 1
 
 
-class PLRSOM(RSOM):
-    def __init__(self):
-        pass
+class PLRSOM(PLSOM):
+    def __init__(self,
+                 nrows,
+                 ncols,
+                 input_data,
+                 initial_learning_rate=0.25,
+                 initial_neighbor_radius=1.5,
+                 epochs=15,
+                 beta=None,
+                 initialization="random"):
+        PLSOM.__init__(self,
+                       nrows,
+                       ncols,
+                       input_data,
+                       initial_learning_rate,
+                       initial_neighbor_radius,
+                       epochs,
+                       beta,
+                       initialization=initialization)
+        self.num_cycle = 0
+        self.num_repeat = 0
+        self.alpha = 0
+        self.differences = None
 
+    def find_winner_euclidean_distance(self, datapoint):
+        self.curr_bmu_index = self.get_plrsom_bmu(datapoint, self.alpha)
+        self.curr_bmu_weight = self.som_map[self.curr_bmu_index]
+        return np.linalg.norm(datapoint - self.curr_bmu_weight)
 
+    def find_difference_vector(self, datapoint, alpha):
+        """
+        Parameters:
+        y_t: Y at time t
+        x_t: X at time t
+        w_t: weight value at t
+        alpha: Weighting factor determining the effect of
+            the difference vector
+        """
+        # print(self.differences)
+        first = ((1 - alpha) * self.differences)
+        second = (alpha * (datapoint - self.som_map))
+        y_t = first + second
+        # print(y_t)
+        return y_t
 
+    def get_plrsom_bmu(self, datapoint, alpha):
+        self.differences = self.find_difference_vector(datapoint, alpha)
+        a = np.linalg.norm(self.differences, axis=2)
+        return tuple(np.argwhere(a == np.min(a))[0])
+
+    def reset(self):
+        self.differences = np.zeros(self.som_map.shape)
+
+    def plrsom_train(self,
+                     num_iteration=100,
+                     num_cycle=5,
+                     num_repeat=2,
+                     alpha=0.7):
+        self.num_cycle = num_cycle
+        self.num_repeat = num_repeat
+        self.alpha = alpha
+        self.num_iteration = num_iteration
+        self.counter = 0
+        
+        assert (self.som_map is not None), \
+            "Please initialize SOM weight map!!!"
+        self.differences = np.zeros(self.som_map.shape)
+
+        for iteration in tqdm(range(self.num_iteration)):
+            random_index = np.random.randint(low=0,
+                                             high=self.input_data_length)
+            cycle_index = []
+            for j in range(self.num_cycle + 1):
+                cycle_index.append(random_index - j)
+
+            cycle_index.reverse()
+            cycle_index = [index for index in cycle_index if index >= 0]
+
+            for k in cycle_index:
+                for repeat in range(self.num_repeat):
+                    datapoint = self.input_data[k]
+                    self.find_learning_parameters(self.counter,
+                                                  datapoint,
+                                                  self.best_fit_learning_rate,
+                                                  self.best_fit_neighbor_radius)
+                    self.plsom_update(datapoint)
+                    self.counter += 1
+
+            self.reset()
+
+    def plrsom_batch_train(self,
+                           num_iteration=10,
+                           num_cycle=5,
+                           num_repeat=2,
+                           alpha=0.7,
+                           dataset_percentage=0.5,
+                           min_dataset_size=10):
+        self.num_cycle = num_cycle
+        self.num_repeat = num_repeat
+        self.alpha = alpha
+        self.epochs = num_iteration
+        self.counter = 0
+
+        assert (self.som_map is not None), \
+            "Please initialize SOM weight map!!!"
+        self.differences = np.zeros(self.som_map.shape)
+
+        # print(self.epochs)
+        for iteration in tqdm(range(self.epochs)):
+            for data_index in self.create_batch_data(dataset_percentage,
+                                                     min_dataset_size,
+                                                     seed=None):
+                cycle_index = []
+                for j in range(self.num_cycle + 1):
+                    cycle_index.append(data_index - j)
+
+                    cycle_index.reverse()
+                    cycle_index = [index for index in cycle_index if index >= 0]
+
+                for k in cycle_index:
+                    for repeat in range(self.num_repeat):
+                        datapoint = self.input_data[k]
+                        self.find_learning_parameters(self.counter,
+                                                      datapoint,
+                                                      self.best_fit_learning_rate,
+                                                      self.best_fit_neighbor_radius)
+                        self.plsom_update(datapoint)
+                        self.counter += 1
+
+                self.reset()
+
+   
 class Growing_SOM(SOM):
     def __init__(self,
                  initial_map_size,
@@ -926,6 +1054,68 @@ class Growing_SOM(SOM):
         return abs(first_neuron_col_value - second_neuron_col_value) == 0
 
 
+class Growing_PLSOM(Growing_SOM):
+    def __init__(self,
+                 initial_map_size,
+                 map_growing_coefficient,
+                 weight_map,
+                 parent_dataset,
+                 parent_quantization_error,
+                 neuron_creator):
+        """Constructor for Growing_SOM Class."""
+        Growing_SOM.__init__(self,
+                             initial_map_size=initial_map_size,
+                             map_growing_coefficient=map_growing_coefficient,
+                             weight_map=weight_map,
+                             parent_dataset=parent_dataset,
+                             parent_quantization_error=parent_quantization_error,
+                             neuron_creator=neuron_creator)
+
+    def plsom_train(self,
+                    epochs,
+                    dataset_percentage,
+                    min_dataset_size,
+                    initial_neighbor_radius=2,
+                    training_type="batch",
+                    max_iter=10):
+        self.epochs = epochs
+        self.initial_learning_rate = 0.95
+        self.initial_neighbor_radius = 2
+
+        beta = self.initial_neighbor_radius
+        
+        iteration = 0
+        can_grow = True
+        while can_grow and (iteration < max_iter):
+            self.plsom = PLSOM(self.nrows,
+                               self.ncols,
+                               self.parent_dataset,
+                               self.initial_learning_rate,
+                               self.initial_neighbor_radius,
+                               self.epochs,
+                               beta,
+                               initialization=None)
+            self.plsom.som_map = self.weight_map
+            if (training_type == "batch"):
+                # print("Training type: {}".format(training_type))
+                self.plsom.plsom_batch_train(dataset_percentage, min_dataset_size)
+            elif (training_type == "normal"):
+                # print("Training type: {}".format(training_type))
+                self.plsom.plsom_train()
+            self.weight_map = self.plsom.som_map
+            self.modify_neuron_weight_matrix()
+            
+            iteration += 1
+            can_grow = self.allowed_to_grow()
+            if can_grow:
+                # print("Allowed to grow!")
+                self.grow()
+                self.nrows, self.ncols = self.current_map_shape
+        if can_grow:
+            self.map_data_to_neurons()
+
+        return self
+
 class Growing_RSOM(Growing_SOM):
     def __init__(self,
                  initial_map_size,
@@ -996,6 +1186,84 @@ class Growing_RSOM(Growing_SOM):
                                      self.num_repeat,
                                      self.alpha)
             self.weight_map = self.rsom.som_map
+            self.modify_neuron_weight_matrix()
+            
+            iteration += 1
+            can_grow = self.allowed_to_grow()
+            if can_grow:
+                # print("Allowed to grow!")
+                self.grow()
+                self.nrows, self.ncols = self.current_map_shape
+        if can_grow:
+            self.map_data_to_neurons()
+
+        return self
+
+
+class Growing_PLRSOM(Growing_RSOM):
+    def __init__(self,
+                 initial_map_size,
+                 map_growing_coefficient,
+                 weight_map,
+                 parent_dataset,
+                 parent_quantization_error,
+                 neuron_creator):
+        """Constructor for Growing_SOM Class."""
+        Growing_RSOM.__init__(self,
+                              initial_map_size=initial_map_size,
+                              map_growing_coefficient=map_growing_coefficient,
+                              weight_map=weight_map,
+                              parent_dataset=parent_dataset,
+                              parent_quantization_error=parent_quantization_error,
+                              neuron_creator=neuron_creator)
+
+    def plrsom_train(self,
+                     epochs,
+                     dataset_percentage,
+                     min_dataset_size,
+                     num_cycle,
+                     num_repeat,
+                     alpha,
+                     initial_neighbor_radius=2,
+                     training_type="batch",
+                     max_iter=10):
+
+        self.epochs = epochs
+        self.num_cycle = num_cycle
+        self.num_repeat = num_repeat
+        self.alpha = alpha
+
+        self.initial_neighbor_radius = initial_neighbor_radius
+
+        beta = self.initial_neighbor_radius
+
+        iteration = 0
+        can_grow = True
+        while can_grow and (iteration < max_iter):
+            self.plrsom = PLRSOM(self.nrows,
+                                 self.ncols,
+                                 self.parent_dataset,
+                                 self.initial_learning_rate,
+                                 self.initial_neighbor_radius,
+                                 self.epochs,
+                                 beta,
+                                 initialization=None)
+            self.plrsom.som_map = self.weight_map
+            if (training_type == "batch"):
+                # print("Training type: {}".format(training_type))
+                self.plrsom.plrsom_batch_train(self.epochs,
+                                               self.num_cycle,
+                                               self.num_repeat,
+                                               self.alpha,
+                                               dataset_percentage,
+                                               min_dataset_size)
+            elif (training_type == "normal"):
+                # print("Training type: {}".format(training_type))
+                self.plrsom.plrsom_train(self.epochs,
+                                         self.num_cycle,
+                                         self.num_repeat,
+                                         self.alpha)
+            self.weight_map = self.plrsom.som_map
             self.modify_neuron_weight_matrix()
             
             iteration += 1
@@ -1170,6 +1438,26 @@ class GHSOM():
             (row < map_rows and col < map_cols)
 
 
+
+class PL_GHSOM(GHSOM):
+    def __init__(self,
+                 input_dataset,
+                 map_growing_coefficient,
+                 hierarchical_growing_coefficient,
+                 initial_learning_rate,
+                 initial_neighbor_radius,
+                 growing_metric="qe",
+                 training_type="batch"):
+
+        GHSOM.__init__(self,
+                       input_dataset=input_dataset,
+                       map_growing_coefficient=map_growing_coefficient,
+                       hierarchical_growing_coefficient=hierarchical_growing_coefficient,
+                       initial_learning_rate=initial_learning_rate,
+                       initial_neighbor_radius=initial_neighbor_radius,
+                       growing_metric=growing_metric,
+                       training_type=training_type)
+        
 
 class GHRSOM(GHSOM):
     def __init__(self,
