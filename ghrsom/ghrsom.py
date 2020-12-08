@@ -466,6 +466,7 @@ class PLSOM(SOM):
                  initial_neighbor_radius=1.5,
                  epochs=15,
                  beta=None,
+                 scaling_variable=None,
                  initialization="random"):
         SOM.__init__(self,
                      nrows,
@@ -475,7 +476,7 @@ class PLSOM(SOM):
                      initial_neighbor_radius,
                      epochs,
                      initialization=initialization)
-        self.scaling_variable = None
+        self.scaling_variable = scaling_variable
 
         # Constant initial value for beta.
         self.beta = beta if beta else 2
@@ -489,8 +490,8 @@ class PLSOM(SOM):
         self.curr_bmu_weight = None
 
         self.winner_euclidean_distance = None
-
         self.counter = 0
+
 
     def find_winner_euclidean_distance(self, datapoint):
         self.curr_bmu_index = self.get_bmu(datapoint)
@@ -538,7 +539,7 @@ class PLSOM(SOM):
                                  neighbor_radius):
         # if (epoch == 0):
         if (self.scaling_variable is None):
-            # print("First time")
+            print("First time")
             self.scaling_variable = self.initialize_scaling_variable(datapoint)
 
         self.best_fit_learning_rate = self.find_best_fit_learning_rate(datapoint)
@@ -590,6 +591,7 @@ class PLRSOM(PLSOM):
                  initial_neighbor_radius=1.5,
                  epochs=15,
                  beta=None,
+                 scaling_variable=None,
                  initialization="random"):
         PLSOM.__init__(self,
                        nrows,
@@ -599,11 +601,13 @@ class PLRSOM(PLSOM):
                        initial_neighbor_radius,
                        epochs,
                        beta,
+                       scaling_variable,
                        initialization=initialization)
         self.num_cycle = 0
         self.num_repeat = 0
         self.alpha = 0
         self.differences = None
+        self.scaling_variable = scaling_variable
 
     def find_winner_euclidean_distance(self, datapoint):
         self.curr_bmu_index = self.get_plrsom_bmu(datapoint, self.alpha)
@@ -713,7 +717,8 @@ class PLRSOM(PLSOM):
 
                 self.reset()
 
-   
+
+
 class Growing_SOM(SOM):
     def __init__(self,
                  initial_map_size,
@@ -1072,6 +1077,8 @@ class Growing_PLSOM(Growing_SOM):
                              parent_quantization_error=parent_quantization_error,
                              neuron_creator=neuron_creator)
 
+        self.scaling_variable = scaling_variable
+        
     def plsom_train(self,
                     epochs,
                     dataset_percentage,
@@ -1095,8 +1102,10 @@ class Growing_PLSOM(Growing_SOM):
                                self.initial_neighbor_radius,
                                self.epochs,
                                beta,
+                               self.scaling_variable,
                                initialization=None)
             self.plsom.som_map = self.weight_map
+            # print("Scaling variable: {}".format(self.scaling_variable))
             if (training_type == "batch"):
                 # print("Training type: {}".format(training_type))
                 self.plsom.plsom_batch_train(dataset_percentage,
@@ -1105,6 +1114,8 @@ class Growing_PLSOM(Growing_SOM):
                 # print("Training type: {}".format(training_type))
                 self.plsom.plsom_train()
             self.weight_map = self.plsom.som_map
+            self.scaling_variable = self.plsom.scaling_variable
+            # print("Scaling variable: {}".format(self.scaling_variable))
             self.modify_neuron_weight_matrix()
             
             iteration += 1
@@ -1117,6 +1128,8 @@ class Growing_PLSOM(Growing_SOM):
             self.map_data_to_neurons()
 
         return self
+
+
 
 class Growing_RSOM(Growing_SOM):
     def __init__(self,
@@ -1219,6 +1232,8 @@ class Growing_PLRSOM(Growing_RSOM):
                               parent_quantization_error=parent_quantization_error,
                               neuron_creator=neuron_creator)
 
+        self.scaling_variable = None
+
     def plrsom_train(self,
                      epochs,
                      dataset_percentage,
@@ -1249,6 +1264,7 @@ class Growing_PLRSOM(Growing_RSOM):
                                  self.initial_neighbor_radius,
                                  self.epochs,
                                  beta,
+                                 self.scaling_variable,
                                  initialization=None)
             self.plrsom.som_map = self.weight_map
             if (training_type == "batch"):
@@ -1266,6 +1282,8 @@ class Growing_PLRSOM(Growing_RSOM):
                                          self.num_repeat,
                                          self.alpha)
             self.weight_map = self.plrsom.som_map
+            self.scaling_variable = self.plrsom.scaling_variable
+            # print("Scaling variable: {}".format(self.scaling_variable))
             self.modify_neuron_weight_matrix()
             
             iteration += 1
@@ -1459,6 +1477,8 @@ class PL_GHSOM(GHSOM):
                        initial_neighbor_radius=initial_neighbor_radius,
                        growing_metric=growing_metric,
                        training_type=training_type)
+
+        self.scaling_variable = None
 
     def pl_ghsom_train(self,
                        epochs,

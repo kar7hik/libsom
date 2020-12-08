@@ -53,10 +53,10 @@ wg = np.random.random((rows, cols, data.shape[1]))
 #                             data,
 #                             epochs=num_iteration)
 
-plsom_batch = ghrsom.PLSOM(rows,
-                           cols,
-                           data,
-                           epochs=epochs)
+# plsom_batch = ghrsom.PLSOM(rows,
+#                            cols,
+#                            data,
+#                            epochs=epochs)
 
 
 # plrsom_normal = ghrsom.PLRSOM(rows,
@@ -64,10 +64,10 @@ plsom_batch = ghrsom.PLSOM(rows,
 #                               data,
 #                               epochs=num_iteration)
 
-# plrsom_batch = ghrsom.PLRSOM(rows,
-#                              cols,
-#                              data,
-#                              epochs=epochs)
+plrsom_batch = ghrsom.PLRSOM(rows,
+                             cols,
+                             data,
+                             epochs=epochs)
 
 def plot_data(som_map, rows, cols):
     fig = plt.figure()
@@ -113,13 +113,13 @@ def plot_data(som_map, rows, cols):
 # plsom_normal.plsom_train()
 # plot_data(plrsom_normal.som_map, rows, cols)
 
-plsom_batch.plsom_batch_train(dataset_percentage=dataset_percentage,
-                              min_dataset_size=min_size)
-plot_data(plsom_batch.som_map, rows, cols)
+# plsom_batch.plsom_batch_train(dataset_percentage=dataset_percentage,
+#                               min_dataset_size=min_size)
+# plot_data(plsom_batch.som_map, rows, cols)
 
 
 # plrsom_normal.plrsom_train(num_iteration=num_iteration)
 # plot_data(plrsom_normal.som_map, rows, cols)
 
-# plrsom_batch.plrsom_batch_train(min_dataset_size=2)
-# plot_data(plrsom_batch.som_map, rows, cols)
+plrsom_batch.plrsom_batch_train(min_dataset_size=2)
+plot_data(plrsom_batch.som_map, rows, cols)
