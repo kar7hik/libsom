@@ -74,34 +74,51 @@ if training_type == "normal":
 
 
 # GHSOM Initialization: ########################################################
-ghsom = ghrsom.GHSOM(input_dataset,
-                     map_growing_coefficient,
-                     hierarchical_growing_coefficient,
-                     initial_learning_rate,
-                     initial_neighbor_radius,
-                     growing_metric,
-                     training_type)
+# ghsom = ghrsom.GHSOM(input_dataset,
+#                      map_growing_coefficient,
+#                      hierarchical_growing_coefficient,
+#                      initial_learning_rate,
+#                      initial_neighbor_radius,
+#                      growing_metric,
+#                      training_type)
 
 # GHRSOM Initialization: ########################################################
-ghrsom = ghrsom.GHRSOM(input_dataset,
-                       map_growing_coefficient,
-                       hierarchical_growing_coefficient,
-                       initial_learning_rate,
-                       initial_neighbor_radius,
-                       growing_metric,
-                       training_type)
- 
+# ghrsom = ghrsom.GHRSOM(input_dataset,
+#                        map_growing_coefficient,
+#                        hierarchical_growing_coefficient,
+#                        initial_learning_rate,
+#                        initial_neighbor_radius,
+#                        growing_metric,
+#                        training_type)
+
+
+# pl_ghsom = ghrsom.PL_GHSOM(input_dataset,
+#                         map_growing_coefficient,
+#                         hierarchical_growing_coefficient,
+#                         initial_learning_rate,
+#                         initial_neighbor_radius,
+#                         growing_metric,
+#                         training_type)
+
+
+pl_ghrsom = ghrsom.PL_GHRSOM(input_dataset,
+                             map_growing_coefficient,
+                             hierarchical_growing_coefficient,
+                             initial_learning_rate,
+                             initial_neighbor_radius,
+                             growing_metric,
+                             training_type)
 
 # Training: ###################################################################
-start = timer()
-zero_neuron = ghsom.ghsom_train(epochs,
-                                dataset_percentage,
-                                min_dataset_size,
-                                max_iter)
-end = timer()
-print(end - start)
+# start = timer()
+# zero_neuron = ghsom.ghsom_train(epochs,
+#                                 dataset_percentage,
+#                                 min_dataset_size,
+#                                 max_iter)
+# end = timer()
+# print(end - start)
 
-# start1 = timer()
+# start = timer()
 # zero_neuron_1 = ghrsom.ghrsom_train(epochs,
 #                                     num_cycle,
 #                                     num_repeat,
@@ -110,6 +127,25 @@ print(end - start)
 # end1 = timer()
 # print(end1 - start1)
 
+
+# start2 = timer()
+# zero_neuron = pl_ghsom.pl_ghsom_train(epochs,
+#                                       dataset_percentage,
+#                                       min_dataset_size,
+#                                       max_iter)
+# end2 = timer()
+# print(end2 - start2)
+
+start3 = timer()
+zero_neuron = pl_ghrsom.pl_ghrsom_train(epochs,
+                                        dataset_percentage,
+                                        min_dataset_size,
+                                        num_cycle,
+                                        num_repeat,
+                                        alpha,
+                                        max_iter)
+end3 = timer()
+print(end3 - start3)
 
 plot_data(zero_neuron.child_map)
 # plot_data(zero_neuron_1.child_map)

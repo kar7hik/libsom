@@ -17,7 +17,7 @@ growing_metric = "qe"
 epochs = 20
 num_cycle = 5
 num_repeat = 2
-num_iteration = 1000
+num_iteration = 5000
 max_iter = 10
 alpha = 0.7
 
@@ -53,38 +53,38 @@ def plot_data(current_som_map):
     plt.show()
 
 
-# gplsom = ghrsom.Growing_PLSOM((2, 2),
-#                               map_growing_coefficient,
-#                               weight_map,
-#                               input_data,
-#                               er,
-#                               neuron_creator)
+gplsom = ghrsom.Growing_PLSOM((2, 2),
+                              map_growing_coefficient,
+                              weight_map,
+                              input_data,
+                              er,
+                              neuron_creator)
 
 # plot_data(gplsom.weight_map)
-# gplsom.plsom_train(num_iteration,
-#                    dataset_percentage,
-#                    min_size,
-#                    training_type="normal")
-# plot_data(gplsom.weight_map)
+gplsom.plsom_train(epochs,
+                   dataset_percentage,
+                   min_size,
+                   training_type="batch")
+plot_data(gplsom.weight_map)
 
 
 
-gplrsom = ghrsom.Growing_PLRSOM((2, 2),
-                                map_growing_coefficient,
-                                weight_map,
-                                input_data,
-                                er,
-                                neuron_creator)
+# gplrsom = ghrsom.Growing_PLRSOM((2, 2),
+#                                 map_growing_coefficient,
+#                                 weight_map,
+#                                 input_data,
+#                                 er,
+#                                 neuron_creator)
 
 # plot_data(gplrsom.weight_map)
-gplrsom.plrsom_train(num_iteration,
-                    dataset_percentage,
-                    min_size,
-                    num_cycle,
-                    num_repeat,
-                    alpha,
-                    initial_neighbor_radius,
-                    training_type="normal",
-                    max_iter=max_iter)
+# gplrsom.plrsom_train(num_iteration,
+#                     dataset_percentage,
+#                     min_size,
+#                     num_cycle,
+#                     num_repeat,
+#                     alpha,
+#                     initial_neighbor_radius,
+#                     training_type="normal",
+#                     max_iter=max_iter)
 
-plot_data(gplrsom.weight_map)
+# plot_data(gplrsom.weight_map)

@@ -607,6 +607,7 @@ class PLRSOM(PLSOM):
 
     def find_winner_euclidean_distance(self, datapoint):
         self.curr_bmu_index = self.get_plrsom_bmu(datapoint, self.alpha)
+        # print(self.curr_bmu_index)
         self.curr_bmu_weight = self.som_map[self.curr_bmu_index]
         return np.linalg.norm(datapoint - self.curr_bmu_weight)
 
@@ -1098,7 +1099,8 @@ class Growing_PLSOM(Growing_SOM):
             self.plsom.som_map = self.weight_map
             if (training_type == "batch"):
                 # print("Training type: {}".format(training_type))
-                self.plsom.plsom_batch_train(dataset_percentage, min_dataset_size)
+                self.plsom.plsom_batch_train(dataset_percentage,
+                                             min_dataset_size)
             elif (training_type == "normal"):
                 # print("Training type: {}".format(training_type))
                 self.plsom.plsom_train()
@@ -1457,8 +1459,81 @@ class PL_GHSOM(GHSOM):
                        initial_neighbor_radius=initial_neighbor_radius,
                        growing_metric=growing_metric,
                        training_type=training_type)
-        
 
+    def pl_ghsom_train(self,
+                       epochs,
+                       dataset_percentage,
+                       min_dataset_size,
+                       max_iter=25):
+        self.epochs = epochs
+        self.max_iter = max_iter
+        self.dataset_percentage = dataset_percentage
+        self.min_dataset_size = min_dataset_size
+        self.zero_neuron = self.train()
+        
+        return self.zero_neuron
+
+    def create_new_PLSOM(self,
+                         parent_quantization_error,
+                         parent_dataset,
+                         weight_map):
+        return Growing_PLSOM((2, 2),
+                             self.map_growing_coefficient,
+                             weight_map,
+                             parent_dataset,
+                             parent_quantization_error,
+                             self.neuron_creator)
+
+    def create_plsom_zero_neuron(self):
+        self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
+        self.zero_neuron.child_map = self.create_new_PLSOM(
+            self.neuron_creator.zero_quantization_error,
+            self.zero_neuron.input_dataset,
+            self.calc_initial_random_weights())
+
+        return self.zero_neuron
+
+    def train(self):
+
+        self.zero_neuron = self.create_plsom_zero_neuron()
+
+        neurons_to_train_queue = Queue()
+        neurons_to_train_queue.put(self.zero_neuron)
+
+        pool = Pool(processes=None)
+        while not neurons_to_train_queue.empty():
+            size = min(neurons_to_train_queue.qsize(), pool._processes)
+            growing_maps = dict()
+
+            for i in range(size):
+                neuron = neurons_to_train_queue.get()
+
+                growing_maps[neuron] = (pool.apply_async(neuron.child_map.plsom_train,
+                                                         (self.epochs,
+                                                          self.dataset_percentage,
+                                                          self.min_dataset_size,
+                                                          self.initial_neighbor_radius,
+                                                          self.training_type,
+                                                          self.max_iter)))
+                    
+            for neuron in growing_maps:
+                growing_map = growing_maps[neuron].get()
+                neuron.child_map = growing_map
+
+                neurons_to_expand = filter(lambda _neuron: _neuron.needs_child_map(),
+                                           growing_map.neurons.values())
+
+                for _neuron in neurons_to_expand:
+                    _neuron.child_map = self.create_new_PLSOM(
+                        _neuron.compute_quantization_error(),
+                        _neuron.input_dataset,
+                        self.assign_weights(_neuron.get_location(),
+                                            growing_map.weight_map))
+                    neurons_to_train_queue.put(_neuron)
+
+        return self.zero_neuron
+
+    
 class GHRSOM(GHSOM):
     def __init__(self,
                  input_dataset,
@@ -1513,7 +1588,6 @@ class GHRSOM(GHSOM):
 
     def create_rsom_zero_neuron(self):
         self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
-        print()
         self.zero_neuron.child_map = self.create_new_GRSOM(
             self.neuron_creator.zero_quantization_error,
             self.zero_neuron.input_dataset,
@@ -1555,6 +1629,107 @@ class GHRSOM(GHSOM):
 
                 for _neuron in neurons_to_expand:
                     _neuron.child_map = self.create_new_GRSOM(
+                        _neuron.compute_quantization_error(),
+                        _neuron.input_dataset,
+                        self.assign_weights(_neuron.get_location(),
+                                            growing_map.weight_map))
+                    neurons_to_train_queue.put(_neuron)
+
+        return self.zero_neuron
+
+
+
+class PL_GHRSOM(GHRSOM):
+    def __init__(self,
+                 input_dataset,
+                 map_growing_coefficient,
+                 hierarchical_growing_coefficient,
+                 initial_learning_rate,
+                 initial_neighbor_radius,
+                 growing_metric,
+                 training_type="batch"):
+        
+        GHRSOM.__init__(self,
+                        input_dataset=input_dataset,
+                        map_growing_coefficient=map_growing_coefficient,
+                        hierarchical_growing_coefficient=hierarchical_growing_coefficient,
+                        initial_learning_rate=initial_learning_rate,
+                        initial_neighbor_radius=initial_neighbor_radius,
+                        growing_metric=growing_metric,
+                        training_type=training_type)
+
+    def pl_ghrsom_train(self,
+                        epochs=15,
+                        dataset_percentage=0.5,
+                        min_dataset_size=10,
+                        num_cycle=5,
+                        num_repeat=2,
+                        alpha=0.7,
+                        max_iter=25):
+        self.epochs = epochs
+        self.num_cycle = num_cycle
+        self.num_repeat = num_repeat
+        self.alpha = alpha
+
+        self.zero_neuron = self.train()
+        
+        return self.zero_neuron
+
+    def create_new_PLRSOM(self,
+                          parent_quantization_error,
+                          parent_dataset,
+                          weight_map):
+        return Growing_PLRSOM((2, 2),
+                              self.map_growing_coefficient,
+                              weight_map,
+                              parent_dataset,
+                              parent_quantization_error,
+                              self.neuron_creator)
+
+    def create_plrsom_zero_neuron(self):
+        self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
+        self.zero_neuron.child_map = self.create_new_PLRSOM(
+            self.neuron_creator.zero_quantization_error,
+            self.zero_neuron.input_dataset,
+            self.calc_initial_random_weights())
+
+        return self.zero_neuron
+
+    def train(self):
+
+        self.zero_neuron = self.create_plrsom_zero_neuron()
+
+        neurons_to_train_queue = Queue()
+        neurons_to_train_queue.put(self.zero_neuron)
+
+        pool = Pool(processes=None)
+        while not neurons_to_train_queue.empty():
+            size = min(neurons_to_train_queue.qsize(), pool._processes)
+            growing_maps = dict()
+
+            for i in range(size):
+                neuron = neurons_to_train_queue.get()
+
+                growing_maps[neuron] = (pool.apply_async(neuron.child_map.plrsom_train,
+                                                         (self.epochs,
+                                                          self.dataset_percentage,
+                                                          self.min_dataset_size,
+                                                          self.num_cycle,
+                                                          self.num_repeat,
+                                                          self.alpha,
+                                                          self.initial_neighbor_radius,
+                                                          self.training_type,
+                                                          self.max_iter)))
+                    
+            for neuron in growing_maps:
+                growing_map = growing_maps[neuron].get()
+                neuron.child_map = growing_map
+
+                neurons_to_expand = filter(lambda _neuron: _neuron.needs_child_map(),
+                                           growing_map.neurons.values())
+
+                for _neuron in neurons_to_expand:
+                    _neuron.child_map = self.create_new_PLRSOM(
                         _neuron.compute_quantization_error(),
                         _neuron.input_dataset,
                         self.assign_weights(_neuron.get_location(),
