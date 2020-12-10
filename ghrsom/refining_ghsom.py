@@ -499,8 +499,9 @@ class Growing_SOM(SOM):
 
         print("MQE: {}".format(MQE))
         return ((MQE / mapped_neurons) >= (self.map_growing_coefficient *
-                                           self.parent_quantization_error)) and \
-                                           (changed_neurons > int(np.round(mapped_neurons / 5)))
+                                           self.parent_quantization_error))
+                                           # and \
+                                           # (changed_neurons > int(np.round(mapped_neurons / 5)))
 
     def map_data_to_neurons(self):
         for neuron in self.neurons.values():
@@ -907,16 +908,25 @@ zero_neuron = ghsom.ghsom_train()
 #         else:
 #             print("level: {}".format(neuron.level))
 
-def print_levels(zero_neuron):
+def print_levels(zero_neuron, level=0):
+    maps = 0
     for neuron in list(zero_neuron.child_map.neurons.values()):
         if neuron.child_map is not None:
+            maps += 1
             print(neuron.child_map.weight_map.shape)
-            print_levels(neuron)
-
+            print("Location: {}, level: {}".format(neuron.get_location(),
+                                                   neuron.level))
+            print("in level: {}".format(level))
+            level += 1
+            print_levels(neuron, level)
         else:
-            print("level: {}".format(neuron.level))
+            print("Doesn't have child: Location: {}, level: {}".format(neuron.get_location(),
+                                                                       neuron.level))
+
+    print("Total number of maps: {}".format(maps))
         
+            # print_levels(neuron)
+
+
 print_levels(zero_neuron)
-
-
 
