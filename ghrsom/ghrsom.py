@@ -29,6 +29,7 @@ class Neuron():
 
         self.previous_count = 0
         self.current_count = 0
+        self.level = 0
 
     def set_weight_vector(self, weight_vector):
         """Sets the weight vector of the neuron"""
@@ -113,6 +114,7 @@ class Neuron():
         Replaces the current input dataset of the neuron with the given dataset
         """
         self.current_count = len(dataset)
+        print("current dataset length: {}".format(self.current_count))
         self.input_dataset = dataset
 
     def clear_dataset(self):
@@ -125,6 +127,21 @@ class Neuron():
 
     def has_changed_from_previous_epoch(self):
         return self.previous_count != self.current_count
+
+    # def __repr__(self, level=0):
+    #     gap = '\t'*level
+    #     _printable = "{}position {} -- map dimensions {} -- input dataset {} -- level {} \n".format(
+    #         gap,
+    #         self.get_location(),
+    #         self.weight_vector.shape,
+    #         self.input_dataset.shape[0],
+    #         level
+    #     )
+    #     if self.child_map is not None:
+    #         for neuron in self.child_map.neurons.values():
+    #             _printable += neuron.__repr__(level+1)
+    #     return _printable
+
 
 
 class Neuron_Creator():
