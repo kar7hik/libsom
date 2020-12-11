@@ -154,7 +154,7 @@ class Neuron_Creator():
                  growing_metric="qe"):
         self.hierarchical_growing_coefficient = hierarchical_growing_coefficient
         self.growing_metric = growing_metric
-        self.level = 0
+        self.level = None
         
     def new_neuron(self,
                    neuron_location,
@@ -796,13 +796,12 @@ class GHSOM():
                                            growing_map.neurons.values())
 
                 for _neuron in neurons_to_expand:
-                    level = _neuron.level + 1
                     _neuron.child_map = self.create_new_GSOM(
                         _neuron.compute_quantization_error(),
                         _neuron.input_dataset,
                         self.assign_weights(_neuron.get_location(),
                                             growing_map.weight_map),
-                        level
+                        _neuron.level + 1
                     )
                     neurons_to_train_queue.put(_neuron)
 
@@ -857,7 +856,7 @@ class GHSOM():
 input_data = np.random.random((100, 3))
 
 map_growing_coefficient = 0.01
-hierarchical_growing_coefficient = 0.001
+hierarchical_growing_coefficient = 0.0001
 initial_learning_rate = 0.25
 initial_neighbor_radius = 1.5
 growing_metric = "qe"
@@ -908,25 +907,129 @@ zero_neuron = ghsom.ghsom_train()
 #         else:
 #             print("level: {}".format(neuron.level))
 
-def print_levels(zero_neuron, level=0):
-    maps = 0
-    for neuron in list(zero_neuron.child_map.neurons.values()):
+def plot_child(e, gmap):
+    if e.inaxes is not None:
+        coords = (int(e.xdata),
+                  int(e.ydata))
+        print(coords)
+        # print("Current map shape: {}".format(gmap.current_som_map.shape))
+        neuron = gmap.neurons[coords]
         if neuron.child_map is not None:
-            maps += 1
-            print(neuron.child_map.weight_map.shape)
-            print("Location: {}, level: {}".format(neuron.get_location(),
-                                                   neuron.level))
-            print("in level: {}".format(level))
-            level += 1
-            print_levels(neuron, level)
-        else:
-            print("Doesn't have child: Location: {}, level: {}".format(neuron.get_location(),
-                                                                       neuron.level))
+            # print("Child_map shape: {}".format(neuron.child_map.current_som_map.shape))
+            plot_data(neuron.child_map)
+            
 
-    print("Total number of maps: {}".format(maps))
-        
-            # print_levels(neuron)
+def plot_data(gmap):
+    som_map = gmap.weight_map
+    rows = som_map.shape[0]
+    cols = som_map.shape[1]
+
+    print("Current neuron level: {}".format(gmap.level))
+    print("Map size: {}".format(som_map.shape))
+    print(som_map)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, aspect='equal')
+    ax.set_xlim((0, rows + 1))
+    ax.set_ylim((0, cols + 1))
+
+    for x in range(1, rows + 1):
+        for y in range(1, cols + 1):
+            # print(som_map[x-1, y-1, :])
+            ax.add_patch(patches.Rectangle((x-1.0, y-1.0), 1, 1,
+                                           facecolor=som_map[x-1, y-1, :],
+                                           edgecolor='none'))
+
+    fig.canvas.mpl_connect('button_press_event',
+                           lambda event: plot_child(event, gmap))    
+
+    fig.show()
+
+plot_data(zero_neuron.child_map)
+plt.show()
 
 
-print_levels(zero_neuron)
+
+def plot_map_data(som_map, plot=True, filename="generated_image"):
+    
+    rows = som_map.shape[0]
+    cols = som_map.shape[1]
+    fig = plt.figure()
+    ax = fig.add_subplot(111, aspect='equal')
+    ax.set_xlim((0, rows + 1))
+    ax.set_ylim((0, cols + 1))
+
+    for x in range(1, rows + 1):
+        for y in range(1, cols + 1):
+            ax.add_patch(patches.Rectangle((x-1.0, y-1.0), 1, 1,
+                                           facecolor=som_map[x-1, y-1, :],
+                                           edgecolor='none'))
+    if plot is True:
+        fig.show()
+
+    else:
+        fig.savefig(filename)
+
+def save_map_data(som_map, filename):
+    plot_map_data(som_map, plot=False, filename=filename)
+
+result_path = "/home/karthik/Research/gh-rsom/results/"
+zero_file_path = result_path + "zero_neuron.png"
+save_map_data(zero_neuron.child_map.weight_map, zero_file_path)
+
+
+def print_levels(parent_neuron):
+    """
+    Prints level of each neuron map
+    """
+    parent_neuron_child_map = list(parent_neuron.child_map.neurons.values())
+    parent_neuron_level = parent_neuron.child_map.level
+    parent_neuron_location = parent_neuron.get_location()
+    
+    for neuron in parent_neuron_child_map:
+        if neuron.child_map is not None:
+            filename = result_path + \
+                "parent_level_" + str(parent_neuron_level) + \
+                "_parent_location_" + str(parent_neuron_location) + \
+                "_level_" + str(neuron.child_map.level) + \
+                "_location_" + str(neuron.get_location()) + ".png"
+
+            print(neuron.child_map.weight_map)
+            # plot_map_data(neuron.child_map.weight_map)
+            save_map_data(neuron.child_map.weight_map, filename)
+            print_levels(neuron)
+
+
+# print_levels(zero_neuron)
+
+
+# test_data = np.random.random((10, 3))
+
+# Pink shade color for simple testing:
+test_check = np.asarray([[0.7, 0.1, 0.4]])
+
+def plot_rgb_rectangle(rgb_data):
+    fig, ax = plt.subplots()    
+    ax.add_patch(patches.Rectangle((0, 0), 10, 10,
+                                   facecolor=rgb_data))
+    plt.show()
+
+
+def plot_rgb_data(data):
+    assert (data.ndim == 2), \
+        "Data must be 2D array"
+    for i in range(len(data)):
+        print(data[i])
+        plot_rgb_rectangle(data[i])
+
+
+# Pink color
+nn = np.asarray([[[0.76059394, 0.10965542, 0.42907493],
+                  [0.758473,  0.11061076, 0.42790029]],
+                 
+                 [[0.75925117, 0.11046976, 0.42827304],
+                  [0.75490357, 0.1128553,  0.42574649]],
+                 
+                 [[0.75222228, 0.11487857, 0.42403489],
+                  [0.74191858, 0.12119665, 0.41786239]]])
+
 

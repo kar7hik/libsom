@@ -77,7 +77,7 @@ def plot_data(som_map, rows, cols):
 
     for x in range(1, rows + 1):
         for y in range(1, cols + 1):
-            ax.add_patch(patches.Rectangle((x-0.5, y-0.5), 1, 1,
+            ax.add_patch(patches.Rectangle((x-1.0, y-1.0), 1, 1,
                                            facecolor=som_map[x-1, y-1, :],
                                            edgecolor='none'))
     plt.show()
