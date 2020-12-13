@@ -853,24 +853,24 @@ class GHSOM():
 
 
 
-input_data = np.random.random((100, 3))
+# input_data = np.random.random((100, 3))
 
-map_growing_coefficient = 0.01
-hierarchical_growing_coefficient = 0.0001
-initial_learning_rate = 0.25
-initial_neighbor_radius = 1.5
-growing_metric = "qe"
-training_type = "batch"
+# map_growing_coefficient = 0.01
+# hierarchical_growing_coefficient = 0.0001
+# initial_learning_rate = 0.25
+# initial_neighbor_radius = 1.5
+# growing_metric = "qe"
+# training_type = "batch"
 
-epochs = 15
-dataset_percentage = 0.5
-min_dataset_size = 60
-max_iter = 200
-weight_map = np.random.uniform(size=(2, 2, input_data.shape[1]))
-neuron_creator = Neuron_Creator(hierarchical_growing_coefficient,
-                                growing_metric)
-zero_layer = neuron_creator.zero_neuron(input_data, 0)
-er = zero_layer.compute_quantization_error()
+# epochs = 15
+# dataset_percentage = 0.5
+# min_dataset_size = 60
+# max_iter = 200
+# weight_map = np.random.uniform(size=(2, 2, input_data.shape[1]))
+# neuron_creator = Neuron_Creator(hierarchical_growing_coefficient,
+#                                 growing_metric)
+# zero_layer = neuron_creator.zero_neuron(input_data, 0)
+# er = zero_layer.compute_quantization_error()
 
 # gr = Growing_SOM((2, 2),
 #                  map_growing_coefficient,
@@ -883,15 +883,15 @@ er = zero_layer.compute_quantization_error()
 #                  )
 
 
-ghsom = GHSOM(input_data,
-              map_growing_coefficient,
-              hierarchical_growing_coefficient,
-              initial_learning_rate,
-              initial_neighbor_radius,
-              growing_metric)
+# ghsom = GHSOM(input_data,
+#               map_growing_coefficient,
+#               hierarchical_growing_coefficient,
+#               initial_learning_rate,
+#               initial_neighbor_radius,
+#               growing_metric)
 
 
-zero_neuron = ghsom.ghsom_train()
+# zero_neuron = ghsom.ghsom_train()
 
 
 
@@ -944,8 +944,8 @@ def plot_data(gmap):
 
     fig.show()
 
-plot_data(zero_neuron.child_map)
-plt.show()
+# plot_data(zero_neuron.child_map)
+# plt.show()
 
 
 
@@ -974,7 +974,7 @@ def save_map_data(som_map, filename):
 
 result_path = "/home/karthik/Research/gh-rsom/results/"
 zero_file_path = result_path + "zero_neuron.png"
-save_map_data(zero_neuron.child_map.weight_map, zero_file_path)
+# save_map_data(zero_neuron.child_map.weight_map, zero_file_path)
 
 
 def print_levels(parent_neuron):

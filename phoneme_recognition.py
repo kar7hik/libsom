@@ -3,7 +3,7 @@ import python_speech_features
 import matplotlib.pyplot as plt
 from scipy.signal.windows import hann
 import seaborn as sns
-from ghrsom import *
+from ghrsom import refining_ghsom
 
 
 
@@ -29,7 +29,9 @@ hop_length = 512
 fmin = 0
 fmax = None
 sr = 22050
-y, sr = librosa.load("./english.wav")
+y, sr = librosa.load("./data/a_colon.wav")
+
+
 
 mfcc_librosa = librosa.feature.mfcc(y=y,
                                     sr=sr,
@@ -46,11 +48,11 @@ mfcc_librosa = librosa.feature.mfcc(y=y,
 # sns.heatmap(mfcc_librosa)
 # plt.show()
 
-som = GHSOM(mfcc_librosa.T,
-            map_growing_coefficient,
-            hierarchical_growing_coefficient,
-            initial_learning_rate,
-            initial_neighbor_radius,
-            growing_metric)
+som = refining_ghsom.GHSOM(mfcc_librosa.T,
+                           map_growing_coefficient,
+                           hierarchical_growing_coefficient,
+                           initial_learning_rate,
+                           initial_neighbor_radius,
+                           growing_metric)
 
 zero_neuron = som.ghsom_train()
