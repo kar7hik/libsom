@@ -27,6 +27,7 @@ num_cycle = 5
 num_repeat = 2
 alpha = 0.7
 
+
 ghsom = refining_ghsom.GHSOM(train_data,
                               map_growing_coefficient,
                               hierarchical_growing_coefficient,
@@ -36,12 +37,14 @@ ghsom = refining_ghsom.GHSOM(train_data,
 
 zero_neuron = ghsom.ghsom_train()
 
-
+### For interactive digits plotting:
 # interactive_digit_plot(zero_neuron.child_map)
 # plt.show()
 
-# plot_digit_map_data(zero_neuron.child_map)
-# plt.show()
 
-
-print_digit_levels(zero_neuron)
+### Evaluating digit clustering:
+# for i in range(len(test_data)):
+#     m, r = find_best_matching_map(zero_neuron, test_data[i])
+#     map_result = get_best_map(zero_neuron, test_data[i])
+#     plot_single_digit(test_data[i])
+#     plot_digit_map_data(map_result)

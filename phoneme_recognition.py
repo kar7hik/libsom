@@ -21,7 +21,6 @@ num_repeat = 2
 alpha = 0.7
 
 
-
 n_mfcc = 13
 n_mels = 40
 n_fft = 512
@@ -30,7 +29,6 @@ fmin = 0
 fmax = None
 sr = 22050
 y, sr = librosa.load("./data/a_colon.wav")
-
 
 
 mfcc_librosa = librosa.feature.mfcc(y=y,

@@ -2,14 +2,23 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
 from ghrsom import refining_ghsom
+import matplotlib
 # import ghrsom
 from sklearn.datasets import load_digits
-
 
 
 result_path = "/home/karthik/Research/gh-rsom/results/"
 data_shape = 8
 
+
+def plot_single_digit(digit_data):
+    digit_data = digit_data.reshape(data_shape,
+                                    data_shape)
+    
+    plt.imshow(digit_data,
+              cmap='bone_r',
+              interpolation='sinc')
+    plt.show()
 
 
 def gmap_to_matrix(gmap):
@@ -25,6 +34,14 @@ def gmap_to_matrix(gmap):
                                                     newshape=(data_shape,
                                                               data_shape))
     return _image
+
+
+def plot_digit_map_data(som_map, plot=True, filename="Unknown"):
+    plt.imshow(gmap_to_matrix(som_map),
+              cmap='bone_r',
+              interpolation='sinc')
+    plt.show()
+
 
 
 def plot_digit_child(e, gmap):
@@ -48,41 +65,8 @@ def interactive_digit_plot(gmap):
     fig.show()
 
 
-
-def plot_digit_map_data(som_map, plot=True, filename="Unknown"):
-    som_map = som_map.weight_map
-    fig, ax = plt.subplots()
-    ax.imshow(gmap_to_matrix(som_map),
-              cmap='bone_r',
-              interpolation='sinc')
-    plt.axis('off')
-    fig.show()
-
-
 def save_digit_map_data(som_map, filename):
     plot_digit_map_data(som_map, plot=False, filename=filename)
-
-
-def print_digit_levels(parent_neuron):
-    """
-    Prints level of each neuron map
-    """
-    parent_neuron_child_map = list(parent_neuron.child_map.neurons.values())
-    parent_neuron_level = parent_neuron.child_map.level
-    parent_neuron_location = parent_neuron.get_location()
-    
-    for neuron in parent_neuron_child_map:
-        if neuron.child_map is not None:
-            filename = result_path + \
-                "parent_level_" + str(parent_neuron_level) + \
-                "_parent_location_" + str(parent_neuron_location) + \
-                "_level_" + str(neuron.child_map.level) + \
-                "_location_" + str(neuron.get_location()) + ".png"
-
-            # print(neuron.child_map.weight_map)
-            plot_digit_map_data(neuron.child_map)
-            print_digit_levels(neuron)
-            
 
 
 def plot_color_child(e, gmap):
@@ -147,29 +131,6 @@ def plot_color_map_data(som_map, plot=True, filename="generated_image"):
 
 def save_color_map_data(som_map, filename):
     plot_color_map_data(som_map, plot=False, filename=filename)
-
-
-
-def print_color_levels(parent_neuron):
-    """
-    Prints level of each neuron map
-    """
-    parent_neuron_child_map = list(parent_neuron.child_map.neurons.values())
-    parent_neuron_level = parent_neuron.child_map.level
-    parent_neuron_location = parent_neuron.get_location()
-    
-    for neuron in parent_neuron_child_map:
-        if neuron.child_map is not None:
-            filename = result_path + \
-                "parent_level_" + str(parent_neuron_level) + \
-                "_parent_location_" + str(parent_neuron_location) + \
-                "_level_" + str(neuron.child_map.level) + \
-                "_location_" + str(neuron.get_location()) + ".png"
-
-            # print(neuron.child_map.weight_map)
-            # plot_color_map_data(neuron.child_map.weight_map)
-            save_color_map_data(neuron.child_map.weight_map, filename)
-            print_color_levels(neuron)
 
 
 def plot_rgb_rectangle(rgb_data):
