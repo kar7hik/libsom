@@ -43,8 +43,8 @@ zero_neuron = ghsom.ghsom_train()
 
 
 ### Evaluating digit clustering:
-# for i in range(len(test_data)):
-#     m, r = find_best_matching_map(zero_neuron, test_data[i])
-#     map_result = get_best_map(zero_neuron, test_data[i])
-#     plot_single_digit(test_data[i])
-#     plot_digit_map_data(map_result)
+for i in range(len(test_data)):
+    m, r = find_best_matching_map(zero_neuron, test_data[i])
+    map_result = get_best_map(zero_neuron, test_data[i])
+    plot_single_digit(test_data[i])
+    plot_digit_map_data(map_result)

@@ -370,7 +370,8 @@ class RSOM(SOM):
     def get_rsom_bmu(self, datapoint, alpha):
         self.differences = self.find_difference_vector(datapoint, alpha)
         a = np.linalg.norm(self.differences, axis=2)
-        return np.argwhere(a == np.min(a))[0]
+        bmu_index = np.argwhere(a == np.min(a))[0]
+        return tuple(bmu_index)
 
     def reset(self):
         self.differences = np.zeros(self.som_map.shape)
@@ -1084,7 +1085,8 @@ class Growing_PLSOM(Growing_SOM):
                  weight_map,
                  parent_dataset,
                  parent_quantization_error,
-                 neuron_creator):
+                 neuron_creator,
+                 level):
         """Constructor for Growing_SOM Class."""
         Growing_SOM.__init__(self,
                              initial_map_size=initial_map_size,
@@ -1092,7 +1094,8 @@ class Growing_PLSOM(Growing_SOM):
                              weight_map=weight_map,
                              parent_dataset=parent_dataset,
                              parent_quantization_error=parent_quantization_error,
-                             neuron_creator=neuron_creator)
+                             neuron_creator=neuron_creator,
+                             level=level)
 
         self.scaling_variable = scaling_variable
         
@@ -1155,7 +1158,8 @@ class Growing_RSOM(Growing_SOM):
                  weight_map,
                  parent_dataset,
                  parent_quantization_error,
-                 neuron_creator):
+                 neuron_creator,
+                 level):
         """Constructor for Growing_SOM Class."""
         Growing_SOM.__init__(self,
                              initial_map_size=initial_map_size,
@@ -1163,7 +1167,8 @@ class Growing_RSOM(Growing_SOM):
                              weight_map=weight_map,
                              parent_dataset=parent_dataset,
                              parent_quantization_error=parent_quantization_error,
-                             neuron_creator=neuron_creator)
+                             neuron_creator=neuron_creator,
+                             level=level)
 
         # Recurrent SOM
         self.differences = np.zeros(self.weight_map.shape)
@@ -1239,7 +1244,8 @@ class Growing_PLRSOM(Growing_RSOM):
                  weight_map,
                  parent_dataset,
                  parent_quantization_error,
-                 neuron_creator):
+                 neuron_creator,
+                 level):
         """Constructor for Growing_SOM Class."""
         Growing_RSOM.__init__(self,
                               initial_map_size=initial_map_size,
@@ -1247,7 +1253,8 @@ class Growing_PLRSOM(Growing_RSOM):
                               weight_map=weight_map,
                               parent_dataset=parent_dataset,
                               parent_quantization_error=parent_quantization_error,
-                              neuron_creator=neuron_creator)
+                              neuron_creator=neuron_creator,
+                              level=level)
 
         self.scaling_variable = None
 
@@ -1358,13 +1365,15 @@ class GHSOM():
     def create_new_GSOM(self,
                         parent_quantization_error,
                         parent_dataset,
-                        weight_map):
+                        weight_map,
+                        level):
         return Growing_SOM((2, 2),
                            self.map_growing_coefficient,
                            weight_map,
                            parent_dataset,
                            parent_quantization_error,
-                           self.neuron_creator)
+                           self.neuron_creator,
+                           level)
 
     def create_som_zero_neuron(self):
         self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
@@ -1513,20 +1522,23 @@ class PL_GHSOM(GHSOM):
     def create_new_PLSOM(self,
                          parent_quantization_error,
                          parent_dataset,
-                         weight_map):
+                         weight_map,
+                         level):
         return Growing_PLSOM((2, 2),
                              self.map_growing_coefficient,
                              weight_map,
                              parent_dataset,
                              parent_quantization_error,
-                             self.neuron_creator)
+                             self.neuron_creator,
+                             level)
 
-    def create_plsom_zero_neuron(self):
+    def create_plsom_zero_neuron(self, level=0):
         self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
         self.zero_neuron.child_map = self.create_new_PLSOM(
             self.neuron_creator.zero_quantization_error,
             self.zero_neuron.input_dataset,
-            self.calc_initial_random_weights())
+            self.calc_initial_random_weights(),
+            level)
 
         return self.zero_neuron
 
@@ -1565,7 +1577,8 @@ class PL_GHSOM(GHSOM):
                         _neuron.compute_quantization_error(),
                         _neuron.input_dataset,
                         self.assign_weights(_neuron.get_location(),
-                                            growing_map.weight_map))
+                                            growing_map.weight_map),
+                        _neuron + 1)
                     neurons_to_train_queue.put(_neuron)
 
         return self.zero_neuron
@@ -1615,20 +1628,23 @@ class GHRSOM(GHSOM):
     def create_new_GRSOM(self,
                          parent_quantization_error,
                          parent_dataset,
-                         weight_map):
+                         weight_map,
+                         level):
         return Growing_RSOM((2, 2),
                             self.map_growing_coefficient,
                             weight_map,
                             parent_dataset,
                             parent_quantization_error,
-                            self.neuron_creator)
+                            self.neuron_creator,
+                            level)
 
-    def create_rsom_zero_neuron(self):
+    def create_rsom_zero_neuron(self, level=0):
         self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
         self.zero_neuron.child_map = self.create_new_GRSOM(
             self.neuron_creator.zero_quantization_error,
             self.zero_neuron.input_dataset,
-            self.calc_initial_random_weights())
+            self.calc_initial_random_weights(),
+            level)
 
         return self.zero_neuron
 
@@ -1669,7 +1685,8 @@ class GHRSOM(GHSOM):
                         _neuron.compute_quantization_error(),
                         _neuron.input_dataset,
                         self.assign_weights(_neuron.get_location(),
-                                            growing_map.weight_map))
+                                            growing_map.weight_map),
+                        _neuron.level + 1)
                     neurons_to_train_queue.put(_neuron)
 
         return self.zero_neuron
@@ -1715,20 +1732,23 @@ class PL_GHRSOM(GHRSOM):
     def create_new_PLRSOM(self,
                           parent_quantization_error,
                           parent_dataset,
-                          weight_map):
+                          weight_map,
+                          level):
         return Growing_PLRSOM((2, 2),
                               self.map_growing_coefficient,
                               weight_map,
                               parent_dataset,
                               parent_quantization_error,
-                              self.neuron_creator)
+                              self.neuron_creator,
+                              level)
 
     def create_plrsom_zero_neuron(self):
         self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
         self.zero_neuron.child_map = self.create_new_PLRSOM(
             self.neuron_creator.zero_quantization_error,
             self.zero_neuron.input_dataset,
-            self.calc_initial_random_weights())
+            self.calc_initial_random_weights(),
+            level)
 
         return self.zero_neuron
 
@@ -1770,7 +1790,8 @@ class PL_GHRSOM(GHRSOM):
                         _neuron.compute_quantization_error(),
                         _neuron.input_dataset,
                         self.assign_weights(_neuron.get_location(),
-                                            growing_map.weight_map))
+                                            growing_map.weight_map),
+                        _neuron + 1)
                     neurons_to_train_queue.put(_neuron)
 
         return self.zero_neuron

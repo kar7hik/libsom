@@ -17,23 +17,23 @@ growing_metric = "qe"
 training_type = "batch"
 
 
-ghsom = refining_ghsom.GHSOM(input_data,
-                             map_growing_coefficient,
-                             hierarchical_growing_coefficient,
-                             initial_learning_rate,
-                             initial_neighbor_radius,
-                             growing_metric)
+# ghsom = refining_ghsom.GHSOM(input_data,
+#                              map_growing_coefficient,
+#                              hierarchical_growing_coefficient,
+#                              initial_learning_rate,
+#                              initial_neighbor_radius,
+#                              growing_metric)
 
 
-zero_neuron = ghsom.ghsom_train()
+# zero_neuron = ghsom.ghsom_train()
 
 
 ### Evaluating color clustering:
-# for i in range(len(test_data)):
-#     m, r = find_best_matching_map(zero_neuron, test_data[i])
-#     map_result = get_best_map(zero_neuron, test_data[i])
-#     plot_rgb_data(test_data[i])
-#     plot_color_map_data(map_result)
+for i in range(len(test_data)):
+    m, r = find_best_matching_map(zero_neuron, test_data[i])
+    map_result = get_best_map(zero_neuron, test_data[i])
+    plot_rgb_data(test_data[i])
+    plot_color_map_data(map_result)
 
 
 
