@@ -1,8 +1,8 @@
 from sklearn.datasets import load_digits
 from matplotlib import pyplot as plt
 import matplotlib
-from ghrsom import refining_ghsom
-from ghrsom.utils import *
+from libsom import som_models
+from libsom import utils
 import numpy as np
 
 
@@ -28,23 +28,23 @@ num_repeat = 2
 alpha = 0.7
 
 
-ghsom = refining_ghsom.GHSOM(train_data,
-                              map_growing_coefficient,
-                              hierarchical_growing_coefficient,
-                              initial_learning_rate,
-                              initial_neighbor_radius,
-                              growing_metric)
+ghsom = som_models.GHSOM(train_data,
+                         map_growing_coefficient,
+                         hierarchical_growing_coefficient,
+                         initial_learning_rate,
+                         initial_neighbor_radius,
+                         growing_metric)
 
 zero_neuron = ghsom.ghsom_train()
 
 ### For interactive digits plotting:
-# interactive_digit_plot(zero_neuron.child_map)
+# utils.interactive_digit_plot(zero_neuron.child_map)
 # plt.show()
 
 
 ### Evaluating digit clustering:
 for i in range(len(test_data)):
-    m, r = find_best_matching_map(zero_neuron, test_data[i])
-    map_result = get_best_map(zero_neuron, test_data[i])
-    plot_single_digit(test_data[i])
-    plot_digit_map_data(map_result)
+    m, r = utils.find_best_matching_map(zero_neuron, test_data[i])
+    map_result = utils.get_best_map(zero_neuron, test_data[i])
+    utils.plot_single_digit(test_data[i])
+    utils.plot_digit_map_data(map_result)

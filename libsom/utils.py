@@ -1,9 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
-from ghrsom import refining_ghsom
 import matplotlib
-# import ghrsom
 from sklearn.datasets import load_digits
 
 
