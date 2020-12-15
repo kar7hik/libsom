@@ -1117,7 +1117,7 @@ class Growing_PLSOM(Growing_SOM):
                              neuron_creator=neuron_creator,
                              level=level)
 
-        self.scaling_variable = scaling_variable
+        self.scaling_variable = None
         
     def plsom_train(self,
                     epochs,
@@ -1529,7 +1529,7 @@ class PL_GHSOM(GHSOM):
                        growing_metric=growing_metric,
                        training_type=training_type)
 
-        self.scaling_variable = None
+        # self.scaling_variable = None
 
     def pl_ghsom_train(self,
                        epochs,
@@ -1558,7 +1558,8 @@ class PL_GHSOM(GHSOM):
                              level)
 
     def create_plsom_zero_neuron(self, level=0):
-        self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
+        self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset,
+                                                           level)
         self.zero_neuron.child_map = self.create_new_PLSOM(
             self.neuron_creator.zero_quantization_error,
             self.zero_neuron.input_dataset,
@@ -1603,7 +1604,7 @@ class PL_GHSOM(GHSOM):
                         _neuron.input_dataset,
                         self.assign_weights(_neuron.get_location(),
                                             growing_map.weight_map),
-                        _neuron + 1)
+                        _neuron.level + 1)
                     neurons_to_train_queue.put(_neuron)
 
         return self.zero_neuron
@@ -1665,7 +1666,8 @@ class GHRSOM(GHSOM):
                             level)
 
     def create_rsom_zero_neuron(self, level=0):
-        self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
+        self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset,
+                                                           level)
         self.zero_neuron.child_map = self.create_new_GRSOM(
             self.neuron_creator.zero_quantization_error,
             self.zero_neuron.input_dataset,
@@ -1769,7 +1771,8 @@ class PL_GHRSOM(GHRSOM):
                               level)
 
     def create_plrsom_zero_neuron(self, level=0):
-        self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset)
+        self.zero_neuron = self.neuron_creator.zero_neuron(self.input_dataset,
+                                                           level)
         self.zero_neuron.child_map = self.create_new_PLRSOM(
             self.neuron_creator.zero_quantization_error,
             self.zero_neuron.input_dataset,
@@ -1817,7 +1820,7 @@ class PL_GHRSOM(GHRSOM):
                         _neuron.input_dataset,
                         self.assign_weights(_neuron.get_location(),
                                             growing_map.weight_map),
-                        _neuron + 1)
+                        _neuron.level + 1)
                     neurons_to_train_queue.put(_neuron)
 
         return self.zero_neuron
