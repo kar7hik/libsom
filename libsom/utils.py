@@ -192,6 +192,11 @@ def get_best_map(parent_neuron, test_data):
     location = result_list[min_mean].get('location')
     weight = result_list[min_mean].get('weight_map')
     mean =  result_list[min_mean].get('mean')
-    print("Level: {}, Location: {}, mean: {}".format(level, location, mean))
+    map_shape = weight.shape
+    print("Level: {}, Location: {}, mean: {}, map shape: {}".format(
+        level,
+        location,
+        mean,
+        map_shape))
     
-    return weight
+    return level, location, weight, mean
