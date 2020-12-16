@@ -190,8 +190,6 @@ def plot_speech_bmu_locations(levels,
     ax.set_zlabel('Z axis')
     
     plt.show()
-
-
     
 # plot_speech_bmu_locations(levels, x_location, y_location, mean_values)
 # plot_speech_bmu_locations(levels_a, x_location_a, y_location_a, mean_a)
