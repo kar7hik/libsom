@@ -195,7 +195,6 @@ def plot_speech_bmu_locations(levels,
 # plot_speech_bmu_locations(levels_a, x_location_a, y_location_a, mean_a)
 
 
-
 # fig = plt.figure()
 # ax0 = fig.add_subplot(211, projection='3d')
 # ax1 = fig.add_subplot(212, projection='3d')
