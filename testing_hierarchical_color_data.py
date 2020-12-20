@@ -4,6 +4,7 @@ from matplotlib import patches as patches
 from libsom import som_models
 from sklearn.datasets import load_digits
 from libsom import utils
+import pickle
 
 
 input_data = np.random.random((500, 3))
@@ -36,6 +37,16 @@ min_dataset_size = 10
 
 # zero_neuron = ghsom.ghsom_train()
 
+
+result_path = "/home/karthik/Research/libsom/data/"
+result_filename = "zero_neuron.obj"
+# neuron_file = open(str(result_path+result_filename), 'wb')
+# pickle.dump(zero_neuron, neuron_file)
+
+
+neuron_file_obj = open(str(result_path+result_filename), 'rb')
+neuron_obj = pickle.load(neuron_file_obj)
+zero_neuron = neuron_obj
 
 ### Using GHRSOM model:
 # ghrsom = som_models.GHRSOM(input_data,
@@ -88,7 +99,8 @@ min_dataset_size = 10
 ### Evaluating color clustering:
 # for i in range(len(test_data)):
 #     m, r = utils.find_best_matching_map(zero_neuron, test_data[i])
-#     map_result = utils.get_best_map(zero_neuron, test_data[i])
+#     map_result = utils.get_best_map(zero_neuron,
+#                                     test_data[i])
 #     utils.plot_rgb_data(test_data[i])
 #     utils.plot_color_map_data(map_result)
 
@@ -100,3 +112,5 @@ min_dataset_size = 10
 # plt.show()
 
 ###################################
+
+
