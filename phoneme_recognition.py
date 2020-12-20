@@ -10,6 +10,10 @@ import pickle
 import numpy as np
 
 
+### Parameters for Dataset:
+num_people = 4
+num_digits = 10
+
 map_growing_coefficient = 0.1
 hierarchical_growing_coefficient = 0.0001
 initial_learning_rate = 0.15
@@ -33,11 +37,6 @@ fmax = None
 sr = 22050
 
 
-test_y, test_sr = librosa.load("./data/hello_test.wav")
-
-
-    
-
 mfcc_librosa = librosa.feature.mfcc(y=f,
                                     sr=sr,
                                     n_fft=n_fft,
@@ -48,21 +47,9 @@ mfcc_librosa = librosa.feature.mfcc(y=f,
                                     fmax=fmax,
                                     htk=False)
 
-mfcc_librosa_test = librosa.feature.mfcc(y=test_y,
-                                         sr=test_sr,
-                                         n_fft=n_fft,
-                                         n_mfcc=n_mfcc,
-                                         n_mels=n_mels,
-                                         hop_length=hop_length,
-                                         fmin=fmin,
-                                         fmax=fmax,
-                                         htk=False)
-
-
-
 
 mfcc_librosa = mfcc_librosa.T
-mfcc_librosa_test = mfcc_librosa_test.T
+
 
 
 som = som_models.GHSOM(mfcc_librosa,
@@ -73,27 +60,4 @@ som = som_models.GHSOM(mfcc_librosa,
                        growing_metric)
 
 zero_neuron = som.ghsom_train()
-
-# plsom = som_models.PL_GHSOM(mfcc_librosa,
-#                             map_growing_coefficient,
-#                             hierarchical_growing_coefficient,
-#                             initial_learning_rate,
-#                             initial_neighbor_radius,
-#                             growing_metric)
-
-
-# zero_neuron = plsom.pl_ghsom_train(epochs,
-#                                    dataset_percentage,
-#                                    min_dataset_size,
-#                                    # num_cycle,
-#                                    # num_repeat,
-#                                    # alpha,
-#                                    max_iter)
-# find_som_levels(zero_neuron)
-
-
-
-
-levels, x_location, y_location, weights, mean_values = test_speech_data(zero_neuron,
-                                                                        mfcc_librosa_test)
 
