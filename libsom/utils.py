@@ -283,10 +283,10 @@ def find_som_levels(parent_neuron):
 def test_speech_datapoint(parent_neuron, test_datapoint):
     assert (test_datapoint.ndim == 2), \
         "Data point must be a 2D array!!!"
-    m, r = utils.find_best_matching_map(parent_neuron,
-                                        test_datapoint)
-    level, location, map_result, mean = utils.get_detailed_best_map(parent_neuron,
-                                                                    test_datapoint)    
+    m, r = find_best_matching_map(parent_neuron,
+                                  test_datapoint)
+    level, location, map_result, mean = get_detailed_best_map(parent_neuron,
+                                                              test_datapoint)    
     return level, location, map_result, mean
 
 
