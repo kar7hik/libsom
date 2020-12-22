@@ -4,7 +4,7 @@ from matplotlib import patches as patches
 from libsom import som_models
 from sklearn.datasets import load_digits
 from libsom import utils
-import pickle
+
 
 
 input_data = np.random.random((500, 3))
@@ -37,16 +37,15 @@ min_dataset_size = 10
 
 # zero_neuron = ghsom.ghsom_train()
 
-
 result_path = "/home/karthik/Research/libsom/data/"
 result_filename = "zero_neuron.obj"
-# neuron_file = open(str(result_path+result_filename), 'wb')
-# pickle.dump(zero_neuron, neuron_file)
+
+### Saving the object:
+# utils.pickle_object(result_filename, zero_neuron, path=result_path)
 
 
-neuron_file_obj = open(str(result_path+result_filename), 'rb')
-neuron_obj = pickle.load(neuron_file_obj)
-zero_neuron = neuron_obj
+### Loading the object from file:
+zero_neuron = utils.load_pickle_object(result_filename, path=result_path)
 
 ### Using GHRSOM model:
 # ghrsom = som_models.GHRSOM(input_data,

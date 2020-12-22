@@ -3,10 +3,10 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as patches
 import matplotlib
 from sklearn.datasets import load_digits
-
-
-result_path = "/home/karthik/Research/gh-rsom/results/"
-data_shape = 8
+from libsom.global_variables import *
+import os
+import pickle
+import json
 
 
 def plot_single_digit(digit_data):
@@ -164,12 +164,12 @@ def find_map_mean(parent_neuron, test_data, result_list = []):
         if neuron.child_map is not None:
             dist = np.linalg.norm(neuron.child_map.weight_map - test_data,
                                   axis=2)
-            mean = dist.mean()
+            dist_diff_mean = dist.mean()
             # plot_color_map_data(neuron.child_map.weight_map)
             d = {'level': neuron.child_map.level,
                  'location': neuron.get_location(),
                  'weight_map': neuron.child_map.weight_map,
-                 'mean': mean}
+                 'dist_diff_mean': dist_diff_mean}
             result_list.append(d)
             find_map_mean(neuron, test_data, result_list)
 
@@ -177,51 +177,14 @@ def find_map_mean(parent_neuron, test_data, result_list = []):
 def find_best_matching_map(parent_neuron, test_data):
     result_list = []
     find_map_mean(parent_neuron, test_data, result_list)
-    mean_list = [item.get('mean') for item in result_list]
+    dist_diff_mean_list = [item.get('dist_diff_mean') for item in result_list]
     
-    min_mean = np.argmin(np.asarray(mean_list))
-    min_mean_value = mean_list[min_mean]
+    min_mean = np.argmin(np.asarray(dist_diff_mean_list))
+    min_mean_value = dist_diff_mean_list[min_mean]
     # print(min_mean, min_mean_value)
 
     return min_mean, result_list
 
-
-
-# def find_map_mean(parent_neuron, test_data, result_list = []):
-#     """
-#     Finds the Euclidean distance between test data and available maps.
-#     The map with minimum mean value of Euclidean distance will be selected as the winner. 
-#     """
-#     winner_map = None
-
-#     parent_neuron_child_map = list(parent_neuron.child_map.neurons.values())
-#     parent_neuron_level = parent_neuron.child_map.level
-#     parent_neuron_location = parent_neuron.get_location()
-    
-#     for neuron in parent_neuron_child_map:
-#         if neuron.child_map is not None:
-#             dist = np.linalg.norm(neuron.child_map.weight_map - test_data,
-#                                   axis=2)
-#             mean = dist.mean()
-#             # plot_color_map_data(neuron.child_map.weight_map)
-#             d = {'level': neuron.child_map.level,
-#                  'location': neuron.get_location(),
-#                  'weight_map': neuron.child_map.weight_map,
-#                  'mean': mean}
-#             result_list.append(d)
-#             find_map_mean(neuron, test_data, result_list)
-
-
-# def find_best_matching_map(parent_neuron, test_data):
-#     result_list = []
-#     find_map_mean(parent_neuron, test_data, result_list)
-#     mean_list = [item.get('mean') for item in result_list]
-    
-#     min_mean = np.argmin(np.asarray(mean_list))
-#     min_mean_value = mean_list[min_mean]
-#     # print(min_mean, min_mean_value)
-
-#     return min_mean, result_list
 
 def get_best_map(parent_neuron, test_data):
     min_mean, result_dict = find_best_matching_map(parent_neuron,
@@ -236,15 +199,15 @@ def get_detailed_best_map(parent_neuron, test_data):
     level = result_list[min_mean].get('level')
     location = result_list[min_mean].get('location')
     weight = result_list[min_mean].get('weight_map')
-    mean =  result_list[min_mean].get('mean')
+    dist_diff_mean =  result_list[min_mean].get('dist_diff_mean')
     map_shape = weight.shape
-    print("Level: {}, Location: {}, mean: {}, map shape: {}".format(
+    print("Level: {}, Location: {}, distance_diff_mean: {}, map shape: {}".format(
         level,
         location,
-        mean,
+        dist_diff_mean,
         map_shape))
     
-    return level, location, weight, mean
+    return level, location, weight, dist_diff_mean
 
 
 def get_best_map_weight_mean(parent_neuron, test_data):
@@ -285,9 +248,9 @@ def test_speech_datapoint(parent_neuron, test_datapoint):
         "Data point must be a 2D array!!!"
     m, r = find_best_matching_map(parent_neuron,
                                   test_datapoint)
-    level, location, map_result, mean = get_detailed_best_map(parent_neuron,
-                                                              test_datapoint)    
-    return level, location, map_result, mean
+    level, location, map_result, distance_diff_mean = get_detailed_best_map(parent_neuron,
+                                                                            test_datapoint)    
+    return level, location, map_result, distance_diff_mean
 
 
 def test_speech_data(parent_neuron, test_data):
@@ -299,33 +262,33 @@ def test_speech_data(parent_neuron, test_data):
     x_location = list()
     y_location = list()
     weights = list()
-    mean_values = list()
+    dist_diff_mean_values = list()
     
     for i in range(num_test_data):
         test_datapoint = test_data[i].reshape(1,
                                               test_data.shape[1])
-        level, location, weight, mean = test_speech_datapoint(parent_neuron,
-                                                              test_datapoint)
+        level, location, weight, dist_diff_mean = test_speech_datapoint(parent_neuron,
+                                                                        test_datapoint)
         levels.append(level)
         x_location.append(location[0])
         y_location.append(location[1])
         weights.append(weight)
-        mean_values.append(mean)
+        dist_diff_mean_values.append(dist_diff_mean)
         # mean_values.append(weight.mean())
 
     levels = np.asarray(levels)
     x_location = np.asarray(x_location)
     y_location = np.asarray(y_location)
     weights = np.asarray(weights)
-    mean_values = np.asarray(mean_values)
+    dist_diff_mean_values = np.asarray(dist_diff_mean_values)
         
-    return levels, x_location, y_location, weights, mean_values
+    return levels, x_location, y_location, weights, dist_diff_mean_values
 
 
 def plot_speech_bmu_locations(levels,
                               x_location,
                               y_location,
-                              mean):
+                              distance_diff_mean):
     fig = plt.figure(dpi=300)
 
     ax = fig.add_subplot(111, projection='3d')
@@ -334,7 +297,7 @@ def plot_speech_bmu_locations(levels,
     ax.scatter3D(x_location,
                  y_location,
                  levels,
-                 c=mean,
+                 c=distance_diff_mean,
                  cmap=my_cmap)
 
     ax.set_xlabel('X axis')
@@ -343,3 +306,24 @@ def plot_speech_bmu_locations(levels,
     
     plt.show()
     
+### Serialization:
+def pickle_object(filename, obj, path="./"):
+    filepath = os.path.join(path, filename)
+    with open(filepath, 'wb') as obj_file:
+        pickle.dump(obj, obj_file)
+
+
+def load_pickle_object(filename, path="./"):
+    filepath = os.path.join(path, filename)
+    obj = None
+    with open(filepath, 'rb') as obj_file:
+        obj = pickle.load(obj_file)
+
+    return obj
+    
+
+def save_object_as_json(filename, obj, path="./"):
+    filepath = os.path.join(path, filename)
+    with open(filepath, 'w') as f:
+        json.dump(obj, f)
+        print("Write complete!!!")
