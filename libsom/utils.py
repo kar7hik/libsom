@@ -175,6 +175,9 @@ def find_map_mean(parent_neuron, test_data, result_list = []):
 
 
 def find_best_matching_map(parent_neuron, test_data):
+    """
+    
+    """
     result_list = []
     find_map_mean(parent_neuron, test_data, result_list)
     dist_diff_mean_list = [item.get('dist_diff_mean') for item in result_list]
@@ -305,7 +308,8 @@ def plot_speech_bmu_locations(levels,
     ax.set_zlabel('Z axis')
     
     plt.show()
-    
+
+
 ### Serialization:
 def pickle_object(filename, obj, path="./"):
     filepath = os.path.join(path, filename)

@@ -110,6 +110,7 @@ zero_neuron = utils.load_pickle_object(result_filename, path=result_path)
 
 
 
+# test_audio_file = "0_george_0.wav"
 test_audio_file = "one.wav"
 test_audio_file_path = os.path.join(data_path, test_audio_file)
 test_audio_data, sr = librosa.load(test_audio_file_path)
@@ -129,3 +130,18 @@ level, loc_x, loc_y, weight, mean = utils.test_speech_data(zero_neuron,
 #                                 loc_x,
 #                                 loc_y,
 #                                 mean)
+
+
+import plotly.figure_factory as ff
+import plotly.express as px
+z = zero_neuron.child_map.weight_map
+
+for i in range(len(z)):
+    x = z[i]
+    # fig = ff.create_annotated_heatmap(x)
+    fig = px.imshow(x)
+    fig.show()
+
+
+# fig = ff.create_dendrogram(z[1])
+# fig.show()
