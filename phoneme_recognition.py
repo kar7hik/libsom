@@ -7,6 +7,7 @@ import seaborn as sns
 from libsom import som_models
 from libsom import utils
 from libsom.global_variables import *
+from libsom import plot_utils
 import pickle
 import numpy as np
 import os
@@ -126,21 +127,21 @@ test_mfcc = test_mfcc.T
 level, loc_x, loc_y, weight, mean = utils.test_speech_data(zero_neuron,
                                                            test_mfcc)
 
-# utils.plot_speech_bmu_locations(level,
-#                                 loc_x,
-#                                 loc_y,
-#                                 mean)
+plot_utils.plot_speech_bmu_locations(level,
+                                    loc_x,
+                                    loc_y,
+                                    mean)
 
 
-import plotly.figure_factory as ff
-import plotly.express as px
-z = zero_neuron.child_map.weight_map
+# import plotly.figure_factory as ff
+# import plotly.express as px
+# z = zero_neuron.child_map.weight_map
 
-for i in range(len(z)):
-    x = z[i]
-    # fig = ff.create_annotated_heatmap(x)
-    fig = px.imshow(x)
-    fig.show()
+# for i in range(len(z)):
+#     x = z[i]
+#     # fig = ff.create_annotated_heatmap(x)
+#     fig = px.imshow(x)
+#     fig.show()
 
 
 # fig = ff.create_dendrogram(z[1])
