@@ -127,10 +127,12 @@ test_mfcc = test_mfcc.T
 level, loc_x, loc_y, weight, mean = utils.test_speech_data(zero_neuron,
                                                            test_mfcc)
 
-plot_utils.plot_speech_bmu_locations(level,
-                                    loc_x,
-                                    loc_y,
-                                    mean)
+
+
+# plot_utils.plot_speech_bmu_locations(level,
+#                                     loc_x,
+#                                     loc_y,
+#                                     mean)
 
 
 # import plotly.figure_factory as ff
@@ -146,3 +148,24 @@ plot_utils.plot_speech_bmu_locations(level,
 
 # fig = ff.create_dendrogram(z[1])
 # fig.show()
+
+
+
+def find_som_details(parent_neuron, result_filename):
+    """
+    Prints the levels, locations and map shapes of every map in the
+    trained network
+    """
+    parent_neuron_level = parent_neuron.level
+    parent_neuron_location = parent_neuron.get_location()
+    parent_neuron_child_map = list(parent_neuron.child_map.neurons.values())
+    for neuron in parent_neuron_child_map:
+        if neuron.child_map is not None:
+            print(neuron.level,
+                  neuron.get_location(),
+                  neuron.child_map.weight_map.shape)
+            find_som_levels(neuron)
+
+
+
+find_som_levels(zero_neuron)

@@ -17,11 +17,11 @@ initial_neighbor_radius = 1.5
 growing_metric = "qe"
 training_type = "batch"
 
-epochs = 10
-num_cycle = 3
-num_repeat = 1
-alpha = 0.7
-max_iter = 5
+epochs = 15
+num_cycle = 5
+num_repeat = 2
+alpha = 0.25
+max_iter = 15
 
 dataset_percentage = 0.5
 min_dataset_size = 10
