@@ -4,7 +4,7 @@ from matplotlib import patches as patches
 from libsom import som_models
 from sklearn.datasets import load_digits
 from libsom import utils
-
+from libsom import plot_utils
 
 
 input_data = np.random.random((500, 3))
@@ -37,15 +37,6 @@ min_dataset_size = 10
 
 # zero_neuron = ghsom.ghsom_train()
 
-result_path = "/home/karthik/Research/libsom/data/"
-result_filename = "zero_neuron.obj"
-
-### Saving the object:
-# utils.pickle_object(result_filename, zero_neuron, path=result_path)
-
-
-### Loading the object from file:
-zero_neuron = utils.load_pickle_object(result_filename, path=result_path)
 
 ### Using GHRSOM model:
 # ghrsom = som_models.GHRSOM(input_data,
@@ -94,14 +85,25 @@ zero_neuron = utils.load_pickle_object(result_filename, path=result_path)
 
 
 
+result_path = "/home/karthik/Research/libsom/data/"
+result_filename = "zero_neuron.obj"
+
+### Saving the object:
+# utils.pickle_object(result_filename, zero_neuron, path=result_path)
+
+
+### Loading the object from file:
+zero_neuron = utils.load_pickle_object(result_filename, path=result_path)
+
+
 
 ### Evaluating color clustering:
-# for i in range(len(test_data)):
-#     m, r = utils.find_best_matching_map(zero_neuron, test_data[i])
-#     map_result = utils.get_best_map(zero_neuron,
-#                                     test_data[i])
-#     utils.plot_rgb_data(test_data[i])
-#     utils.plot_color_map_data(map_result)
+for i in range(len(test_data)):
+    m, r = utils.find_best_matching_map(zero_neuron, test_data[i])
+    map_result = utils.get_best_map_weight(zero_neuron,
+                                    test_data[i])
+    plot_utils.plot_rgb_data(test_data[i])
+    plot_utils.plot_color_map_data(map_result)
 
 
 

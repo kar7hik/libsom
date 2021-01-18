@@ -4,6 +4,7 @@ import matplotlib
 from libsom import som_models
 from libsom import utils
 import numpy as np
+from libsom import plot_utils
 
 
 digits = load_digits()
@@ -45,6 +46,6 @@ zero_neuron = ghsom.ghsom_train()
 ### Evaluating digit clustering:
 for i in range(len(test_data)):
     m, r = utils.find_best_matching_map(zero_neuron, test_data[i])
-    map_result = utils.get_best_map(zero_neuron, test_data[i])
-    utils.plot_single_digit(test_data[i])
-    utils.plot_digit_map_data(map_result)
+    map_result = utils.get_best_map_weight(zero_neuron, test_data[i])
+    plot_utils.plot_single_digit(test_data[i])
+    plot_utils.plot_digit_map_data(map_result)
