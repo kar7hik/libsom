@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.datasets import load_digits
 from libsom.global_variables import *
+from libsom import plot_utils
 import os
 import pickle
 
@@ -124,7 +125,7 @@ def get_best_map_weight_mean(parent_neuron, test_data):
     return weight.mean()
 
 
-def find_som_levels(parent_neuron):
+def find_som_levels(parent_neuron, plot=False):
     """
     Prints the levels, locations and map shapes of every map in the
     trained network
@@ -134,10 +135,20 @@ def find_som_levels(parent_neuron):
     parent_neuron_child_map = list(parent_neuron.child_map.neurons.values())
     for neuron in parent_neuron_child_map:
         if neuron.child_map is not None:
-            print(neuron.level,
-                  neuron.get_location(),
-                  neuron.child_map.weight_map.shape)
-            find_som_levels(neuron)
+            if plot:
+                filename = str(neuron.level) + "_" + str(neuron.get_location())
+                filepath = som_layer_result_path + filename
+                plot_utils.save_color_map_data(neuron.child_map.weight_map,
+                                               filepath)
+                print(neuron.level,
+                      neuron.get_location(),
+                      neuron.child_map.weight_map.shape)
+
+            else:
+                print(neuron.level,
+                      neuron.get_location(),
+                      neuron.child_map.weight_map.shape)
+            find_som_levels(neuron, plot=plot)
 
 
 ### Checking reverse process:

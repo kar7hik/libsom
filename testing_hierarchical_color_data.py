@@ -98,12 +98,12 @@ zero_neuron = utils.load_pickle_object(result_filename, path=result_path)
 
 
 ### Evaluating color clustering:
-for i in range(len(test_data)):
-    m, r = utils.find_best_matching_map(zero_neuron, test_data[i])
-    map_result = utils.get_best_map_weight(zero_neuron,
-                                    test_data[i])
-    plot_utils.plot_rgb_data(test_data[i])
-    plot_utils.plot_color_map_data(map_result)
+# for i in range(len(test_data)):
+#     m, r = utils.find_best_matching_map(zero_neuron, test_data[i])
+#     map_result = utils.get_best_map_weight(zero_neuron,
+#                                     test_data[i])
+#     plot_utils.plot_rgb_data(test_data[i])
+#     plot_utils.plot_color_map_data(map_result)
 
 
 
@@ -115,3 +115,4 @@ for i in range(len(test_data)):
 ###################################
 
 
+utils.find_som_levels(zero_neuron, plot=True)
