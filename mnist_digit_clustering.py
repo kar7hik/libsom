@@ -4,11 +4,17 @@ from matplotlib.colors import Normalize
 
 # Import mnist dataset
 from sklearn.datasets import fetch_openml
+from sklearn.model_selection import train_test_split
 
+from libsom import som_models
 
 mnist = fetch_openml('mnist_784')
 input_data = mnist.data
+input_data
 targets = mnist.target
+
+
+train_data, test, y_train, y_test = train_test_split(X_data, Y, test_size=0.15, random_state=42)
 
 
 # Input parameters: ###########################################################
