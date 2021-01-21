@@ -62,6 +62,8 @@ result_filename = "zero_neuron_mnist.obj"
 ### Saving the object:
 # utils.pickle_object(result_filename, zero_neuron, path=result_path)
 
+### Loading the object from file:
+zero_neuron = utils.load_pickle_object(result_filename, path=result_path)
 
 
 # def show_some_digits(images, targets, sample_size=24, title_text='Digit {}' ):
@@ -87,3 +89,5 @@ result_filename = "zero_neuron_mnist.obj"
 
 
 # show_some_digits(input_data_normalized, targets)
+# plt.imshow(zero_neuron.child_map.weight_map[0][0].reshape(28, 28))
+# plt.show()
