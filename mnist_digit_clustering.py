@@ -7,14 +7,20 @@ from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 
 from libsom import som_models
+from libsom import utils
 
-mnist = fetch_openml('mnist_784')
+mnist = fetch_openml('mnist_784',  data_home="~/Research/mnist/")
 input_data = mnist.data
-input_data
+
+# Normalizing the input data - Maximum Gray scale value is 255 
+input_data_normalized = input_data / 255.0
 targets = mnist.target
+Y = targets
 
-
-train_data, test, y_train, y_test = train_test_split(X_data, Y, test_size=0.15, random_state=42)
+train_data, test_data, y_train, y_test = train_test_split(input_data_normalized,
+                                                          Y,
+                                                          test_size=0.15,
+                                                          random_state=42)
 
 
 # Input parameters: ###########################################################
@@ -33,21 +39,28 @@ alpha = 0.7
 
 
 ### Using PL-GHRSOM model:
-pl_ghrsom = som_models.PL_GHRSOM(input_data,
-                                 map_growing_coefficient,
-                                 hierarchical_growing_coefficient,
-                                 initial_learning_rate,
-                                 initial_neighbor_radius,
-                                 growing_metric)
+# pl_ghrsom = som_models.PL_GHRSOM(train_data,
+#                                  map_growing_coefficient,
+#                                  hierarchical_growing_coefficient,
+#                                  initial_learning_rate,
+#                                  initial_neighbor_radius,
+#                                  growing_metric)
 
-zero_neuron = pl_ghrsom.pl_ghrsom_train(epochs,
-                                        dataset_percentage,
-                                        min_dataset_size,
-                                        num_cycle,
-                                        num_repeat,
-                                        alpha,
-                                        max_iter)
+# zero_neuron = pl_ghrsom.pl_ghrsom_train(epochs,
+#                                         dataset_percentage,
+#                                         min_dataset_size,
+#                                         num_cycle,
+#                                         num_repeat,
+#                                         alpha,
+#                                         max_iter)
 
+
+
+result_path = "/home/karthik/Research/libsom/data/"
+result_filename = "zero_neuron_mnist.obj"
+
+### Saving the object:
+# utils.pickle_object(result_filename, zero_neuron, path=result_path)
 
 
 
@@ -73,4 +86,4 @@ zero_neuron = pl_ghrsom.pl_ghrsom_train(epochs,
 #     plt.show()
 
 
-# show_some_digits(images, targets)
+# show_some_digits(input_data_normalized, targets)
