@@ -85,8 +85,8 @@ min_dataset_size = 10
 
 
 
-result_path = "/home/karthik/Research/libsom/data/"
-result_filename = "zero_neuron.obj"
+result_path = "/home/karthik/Research/"
+result_filename = "zero_neuron_color.obj"
 
 ### Saving the object:
 # utils.pickle_object(result_filename, zero_neuron, path=result_path)
@@ -109,10 +109,10 @@ zero_neuron = utils.load_pickle_object(result_filename, path=result_path)
 
 ### For interactive color plotting:
 
-# utils.interactive_color_plot(zero_neuron.child_map)
+# plot_utils.interactive_color_plot(zero_neuron.child_map)
 # plt.show()
 
 ###################################
 
 
-utils.find_som_levels(zero_neuron, plot=True)
+# utils.find_som_levels(zero_neuron, plot=True)
