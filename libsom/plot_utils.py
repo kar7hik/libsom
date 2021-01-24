@@ -10,7 +10,7 @@ import pickle
 
 
 
-def plot_single_digit(digit_data):
+def plot_single_digit(digit_data, data_shape):
     """
     Plots the single digit image - Helpful for test evaluation
     
@@ -26,7 +26,7 @@ def plot_single_digit(digit_data):
     plt.show()
 
 
-def gmap_to_matrix(gmap):
+def gmap_to_matrix(gmap, data_shape):
     """
 
     """
@@ -52,23 +52,26 @@ def plot_digit_map_data(som_map, plot=True, filename="Unknown"):
 
 
 
-def plot_digit_child(e, gmap):
+def plot_digit_child(e, gmap, data_shape):
     if e.inaxes is not None:
         coords = (int(e.ydata // data_shape),
                   int(e.xdata // data_shape))
         neuron = gmap.neurons[coords]
         if neuron.child_map is not None:
-            interactive_digit_plot(neuron.child_map)
+            interactive_digit_plot(neuron.child_map, data_shape)
 
 
-def interactive_digit_plot(gmap):
+def interactive_digit_plot(gmap, data_shape):
     # _num = "level {} -- parent pos {}".format(level, num)
     fig, ax = plt.subplots()
-    ax.imshow(gmap_to_matrix(gmap.weight_map),
+    ax.imshow(gmap_to_matrix(gmap.weight_map,
+                             data_shape),
               cmap='bone_r',
               interpolation='sinc')
     fig.canvas.mpl_connect('button_press_event',
-                           lambda event: plot_digit_child(event, gmap))
+                           lambda event: plot_digit_child(event,
+                                                          gmap,
+                                                          data_shape))
     plt.axis('off')
     fig.show()
 

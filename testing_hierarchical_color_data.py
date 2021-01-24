@@ -7,12 +7,12 @@ from libsom import utils
 from libsom import plot_utils
 
 
-input_data = np.random.random((500, 3))
+input_data = np.random.random((1000, 3))
 test_data = np.random.random((20, 3))
 
 map_growing_coefficient = 0.01
 hierarchical_growing_coefficient = 0.0001
-initial_learning_rate = 0.25
+initial_learning_rate = 0.95
 initial_neighbor_radius = 1.5
 growing_metric = "qe"
 training_type = "batch"
@@ -20,7 +20,7 @@ training_type = "batch"
 epochs = 15
 num_cycle = 5
 num_repeat = 2
-alpha = 0.25
+alpha = 0.75
 max_iter = 15
 
 dataset_percentage = 0.5
@@ -86,7 +86,7 @@ min_dataset_size = 10
 
 
 result_path = "/home/karthik/Research/"
-result_filename = "zero_neuron_color.obj"
+result_filename = "zero_neuron_color_1.obj"
 
 ### Saving the object:
 # utils.pickle_object(result_filename, zero_neuron, path=result_path)
@@ -108,9 +108,7 @@ zero_neuron = utils.load_pickle_object(result_filename, path=result_path)
 
 
 ### For interactive color plotting:
-
 # plot_utils.interactive_color_plot(zero_neuron.child_map)
-# plt.show()
 
 ###################################
 

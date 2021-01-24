@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 
 from libsom import som_models
 from libsom import utils
+from libsom import plot_utils
 
 mnist = fetch_openml('mnist_784',  data_home="~/Research/mnist/")
 input_data = mnist.data
@@ -56,7 +57,7 @@ alpha = 0.7
 
 
 
-result_path = "/home/karthik/Research/libsom/data/"
+result_path = "/home/karthik/Research/"
 result_filename = "zero_neuron_mnist.obj"
 
 ### Saving the object:
@@ -64,6 +65,10 @@ result_filename = "zero_neuron_mnist.obj"
 
 ### Loading the object from file:
 zero_neuron = utils.load_pickle_object(result_filename, path=result_path)
+
+data_shape = 28
+
+plot_utils.interactive_digit_plot(zero_neuron.child_map, data_shape)
 
 
 # def show_some_digits(images, targets, sample_size=24, title_text='Digit {}' ):
